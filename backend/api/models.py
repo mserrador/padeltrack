@@ -42,7 +42,7 @@ class Sesion(models.Model):
     ]
     
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
-    fecha_hora = models.DateTimeField()
+    fecha_hora = models.DateTimeField(null=True, blank=True)
     lugar = models.CharField(max_length=200)
     coste_total = models.DecimalField(max_digits=6, decimal_places=2)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PLANIFICADA')
