@@ -93,3 +93,7 @@ class MiniPartido(models.Model):
     jugador1_B = models.ForeignKey(Usuario, related_name='mini_partidos_j1B', on_delete=models.CASCADE)
     jugador2_B = models.ForeignKey(Usuario, related_name='mini_partidos_j2B', on_delete=models.CASCADE)
     ganador = models.CharField(max_length=1, choices=GANADOR_CHOICES)
+
+    puntos_A = models.CharField(max_length=5, default='0')
+    puntos_B = models.CharField(max_length=5, default='0')
+    corona_rey = models.BooleanField(default=False)

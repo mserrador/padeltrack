@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
-import MarcadorClasico from '../components/MarcadorClasico'; // Lo crearemos en el paso 3
+import MarcadorClasico from '../components/MarcadorClasico';
+import MarcadorMiniPartido from '../components/MarcadorMiniPartido';
+import ResumenEconomico from '../components/ResumenEconomico';
 
 const DetalleSesion = () => {
   const { id } = useParams();
   const [sesion, setSesion] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  // SIMULACIÓN: Asumimos que el usuario logueado eres tú (ID 1)
-  const MI_USUARIO_ID = 1;
+  const MI_USUARIO_ID = 1; // Simulación
 
   const fetchSesion = async () => {
     try {
       const respuesta = await api.get(`sesiones/${id}/`);
       setSesion(respuesta.data);
     } catch (error) {
-      console.error("Error al cargar la sesión:", error);
+      console.error("Error al cargar:", error);
     } finally {
       setCargando(false);
     }
@@ -26,35 +27,31 @@ const DetalleSesion = () => {
     fetchSesion();
   }, [id]);
 
-  // Funcionalidad 1: Registrar Asistencia
   const handleAsistencia = async (estado) => {
     try {
-      // Comprobamos si el usuario ya había votado para actualizar o crear
       const asistenciaExistente = sesion.asistentes.find(a => a.usuario === MI_USUARIO_ID);
-      
       if (asistenciaExistente) {
         await api.patch(`asistencias/${asistenciaExistente.id}/`, { estado_asistencia: estado });
       } else {
-        await api.post('asistencias/', {
-          sesion: id,
-          usuario: MI_USUARIO_ID,
-          estado_asistencia: estado
-        });
+        await api.post('asistencias/', { sesion: id, usuario: MI_USUARIO_ID, estado_asistencia: estado });
       }
-      fetchSesion(); // Recargamos los datos para ver la lista actualizada
+      fetchSesion();
     } catch (error) {
       console.error("Error al registrar asistencia:", error);
     }
   };
 
-  // Funcionalidad 2: Pasar la sesión a "EN_CURSO"
-  const handleIniciarSesion = async () => {
-    if(window.confirm("¿Seguro que quieres activar la sesión? Se bloqueará la asistencia.")) {
+  const cambiarEstadoSesion = async (nuevoEstado) => {
+    const mensaje = nuevoEstado === 'EN_CURSO' 
+      ? "¿Activar sesión? Se bloqueará la asistencia." 
+      : "¿Finalizar partido e ir a los pagos?";
+      
+    if(window.confirm(mensaje)) {
       try {
-        await api.patch(`sesiones/${id}/`, { estado: 'EN_CURSO' });
+        await api.patch(`sesiones/${id}/`, { estado: nuevoEstado });
         fetchSesion();
       } catch (error) {
-        console.error("Error al iniciar la sesión:", error);
+        console.error("Error al cambiar estado:", error);
       }
     }
   };
@@ -62,9 +59,12 @@ const DetalleSesion = () => {
   if (cargando) return <div className="text-center mt-5"><div className="spinner-border text-success"></div></div>;
   if (!sesion) return <div className="alert alert-danger mt-4">Sesión no encontrada.</div>;
 
+  // Calculamos cuántos han confirmado
+  const confirmados = sesion.asistentes?.filter(a => a.estado_asistencia === 'CONFIRMADO') || [];
+  const numConfirmados = confirmados.length;
+
   return (
     <div>
-      {/* Cabecera */}
       <div className="mb-4">
         <Link to={`/grupos/${sesion.grupo}`} className="text-decoration-none text-muted mb-2 d-block">← Volver al Grupo</Link>
         <div className="d-flex justify-content-between align-items-center">
@@ -85,7 +85,7 @@ const DetalleSesion = () => {
               <button onClick={() => handleAsistencia('DECLINADO')} className="btn btn-outline-danger w-100 fw-bold">❌ No puedo</button>
             </div>
             
-            <h6 className="fw-bold text-secondary">Jugadores Apuntados ({sesion.asistentes?.length || 0})</h6>
+            <h6 className="fw-bold text-secondary">Apuntados ({numConfirmados})</h6>
             <ul className="list-group list-group-flush mb-4">
               {sesion.asistentes?.map(asistente => (
                 <li key={asistente.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -95,7 +95,7 @@ const DetalleSesion = () => {
               ))}
             </ul>
 
-            <button onClick={handleIniciarSesion} className="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm">
+            <button onClick={() => cambiarEstadoSesion('EN_CURSO')} className="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm">
               🎾 Iniciar Sesión en Pista
             </button>
           </div>
@@ -104,7 +104,27 @@ const DetalleSesion = () => {
 
       {/* ESTADO: EN_CURSO */}
       {sesion.estado === 'EN_CURSO' && (
-        <MarcadorClasico asistentes={sesion.asistentes} sesionId={sesion.id} recargarSesion={fetchSesion} />
+        <div className="mb-4">
+          {/* Lógica Automática del Marcador */}
+          {numConfirmados === 4 ? (
+            <MarcadorClasico asistentes={sesion.asistentes} sesionId={sesion.id} recargarSesion={fetchSesion} />
+          ) : numConfirmados > 4 ? (
+            <MarcadorMiniPartido asistentes={sesion.asistentes} sesion={sesion} recargarSesion={fetchSesion} />
+          ) : (
+            <div className="alert alert-danger text-center fw-bold shadow-sm">
+              ❌ No hay suficientes jugadores. Se necesitan al menos 4 confirmados para jugar.
+            </div>
+          )}
+
+          <button onClick={() => cambiarEstadoSesion('FINALIZADA')} className="btn btn-danger w-100 py-3 mt-4 fw-bold shadow-sm">
+            🛑 Terminar Partido y Calcular Pagos
+          </button>
+        </div>
+      )}
+
+      {/* ESTADO: FINALIZADA */}
+      {sesion.estado === 'FINALIZADA' && (
+        <ResumenEconomico sesion={sesion} />
       )}
     </div>
   );
