@@ -58,13 +58,11 @@ class AsistenteSesion(models.Model):
     ]
     
     sesion = models.ForeignKey(Sesion, on_delete=models.CASCADE)
-    # IMPORTANTE: Cambiado User por Usuario
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     estado_asistencia = models.CharField(max_length=20, choices=ESTADOS_ASISTENCIA, default='PENDIENTE')
 
 class Pago(models.Model):
     sesion = models.ForeignKey(Sesion, on_delete=models.CASCADE)
-    # IMPORTANTE: Cambiado User por Usuario
     usuario_pagador = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=6, decimal_places=2)
 
