@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
+import BalanceGlobal from '../components/BalanceGlobal';
 
 const DetalleGrupo = () => {
   const { id } = useParams(); // Capturamos la ID de la URL
@@ -81,7 +82,9 @@ const DetalleGrupo = () => {
           ))}
         </div>
       )}
+      <BalanceGlobal grupoId={id} />
     </div>
+    
   );
 };
 

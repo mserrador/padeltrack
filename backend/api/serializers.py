@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido
+from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido, Liquidacion
 
 # Serializer para el Usuario (sin mostrar la contraseña por seguridad)
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -53,3 +53,11 @@ class SesionSerializer(serializers.ModelSerializer):
             'id', 'grupo', 'grupo_nombre', 'fecha_hora', 'lugar', 'coste_total', 'estado',
             'asistentes', 'pagos', 'partidos_clasicos', 'mini_partidos'
         ]
+
+class LiquidacionSerializer(serializers.ModelSerializer):
+    pagador_nombre = serializers.ReadOnlyField(source='pagador.username')
+    receptor_nombre = serializers.ReadOnlyField(source='receptor.username')
+
+    class Meta:
+        model = Liquidacion
+        fields = ['id', 'grupo', 'pagador', 'pagador_nombre', 'receptor', 'receptor_nombre', 'cantidad', 'fecha']

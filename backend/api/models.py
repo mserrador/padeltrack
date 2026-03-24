@@ -66,6 +66,16 @@ class Pago(models.Model):
     usuario_pagador = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=6, decimal_places=2)
 
+class Liquidacion(models.Model):
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
+    pagador = models.ForeignKey(Usuario, related_name='liquidaciones_enviadas', on_delete=models.CASCADE)
+    receptor = models.ForeignKey(Usuario, related_name='liquidaciones_recibidas', on_delete=models.CASCADE)
+    cantidad = models.DecimalField(max_digits=6, decimal_places=2)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.pagador.username} pagó {self.cantidad}€ a {self.receptor.username}"
+
 # ==========================================
 # 3. MÓDULO DEPORTIVO
 # ==========================================
