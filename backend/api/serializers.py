@@ -13,12 +13,15 @@ class GrupoSerializer(serializers.ModelSerializer):
         model = Grupo
         fields = '__all__'
 
-class SesionSerializer(serializers.ModelSerializer):
-    grupo_nombre = serializers.ReadOnlyField(source='grupo.nombre')
-
+class PartidoClasicoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Sesion
-        fields = ['id', 'grupo', 'grupo_nombre', 'fecha_hora', 'lugar', 'coste_total', 'estado']
+        model = PartidoClasico
+        fields = '__all__'
+
+class MiniPartidoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MiniPartido
+        fields = '__all__'
 
 # Serializer para la Asistencia (RSVP)
 class AsistenteSesionSerializer(serializers.ModelSerializer):
@@ -33,3 +36,20 @@ class PagoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pago
         fields = '__all__'
+
+class SesionSerializer(serializers.ModelSerializer):
+    grupo_nombre = serializers.ReadOnlyField(source='grupo.nombre')
+    
+    # Anidamos las relaciones inversas usando el nombre por defecto de Django (_set)
+    asistentes = AsistenteSesionSerializer(source='asistentesesion_set', many=True, read_only=True)
+    pagos = PagoSerializer(source='pago_set', many=True, read_only=True)
+    partidos_clasicos = PartidoClasicoSerializer(source='partidoclasico_set', many=True, read_only=True)
+    mini_partidos = MiniPartidoSerializer(source='minipartido_set', many=True, read_only=True)
+
+    class Meta:
+        model = Sesion
+        # Añadimos los nuevos campos anidados al array de fields
+        fields = [
+            'id', 'grupo', 'grupo_nombre', 'fecha_hora', 'lugar', 'coste_total', 'estado',
+            'asistentes', 'pagos', 'partidos_clasicos', 'mini_partidos'
+        ]

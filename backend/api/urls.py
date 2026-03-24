@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UsuarioViewSet, GrupoViewSet, SesionViewSet, AsistenteSesionViewSet, PagoViewSet
+from .views import UsuarioViewSet, GrupoViewSet, SesionViewSet, AsistenteSesionViewSet, PagoViewSet, PartidoClasicoViewSet, MiniPartidoViewSet
 
 # El Router crea las URLs automáticamente 
 router = DefaultRouter()
@@ -9,6 +9,8 @@ router.register(r'grupos', GrupoViewSet)
 router.register(r'sesiones', SesionViewSet)
 router.register(r'asistencias', AsistenteSesionViewSet)
 router.register(r'pagos', PagoViewSet)
+router.register(r'partidos-clasicos', PartidoClasicoViewSet)
+router.register(r'mini-partidos', MiniPartidoViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago
-from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, AsistenteSesionSerializer, PagoSerializer
+from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido
+from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, AsistenteSesionSerializer, PagoSerializer, PartidoClasicoSerializer, MiniPartidoSerializer
 
 # Vista para Usuarios
 class UsuarioViewSet(viewsets.ModelViewSet):
@@ -26,3 +26,11 @@ class AsistenteSesionViewSet(viewsets.ModelViewSet):
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
+
+class PartidoClasicoViewSet(viewsets.ModelViewSet):
+    queryset = PartidoClasico.objects.all()
+    serializer_class = PartidoClasicoSerializer
+
+class MiniPartidoViewSet(viewsets.ModelViewSet):
+    queryset = MiniPartido.objects.all()
+    serializer_class = MiniPartidoSerializer
