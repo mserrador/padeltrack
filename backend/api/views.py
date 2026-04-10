@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Sum
@@ -7,15 +8,21 @@ from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, A
 
 # Vista para Usuarios
 class UsuarioViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
 
 # Vista para Grupos
 class GrupoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Grupo.objects.all()
     serializer_class = GrupoSerializer
 
-    # Este decorador crea la ruta mágica /api/grupos/{id}/balance/
+    def get_queryset(self):
+        usuario = self.request.user
+        return Grupo.objects.filter(miembrogrupo__usuario=usuario)
+
+    
     @action(detail=True, methods=['get'])
     def balance(self, request, pk=None):
         grupo = self.get_object()
@@ -68,27 +75,33 @@ class GrupoViewSet(viewsets.ModelViewSet):
 
 # Vista para Sesiones (Aquí es donde se planifican los partidos)
 class SesionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Sesion.objects.all()
     serializer_class = SesionSerializer
 
 # Vista para Asistencia (El "Voy/No voy")
 class AsistenteSesionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = AsistenteSesion.objects.all()
     serializer_class = AsistenteSesionSerializer
 
 # Vista para Pagos (El "Tricount")
 class PagoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
 
 class PartidoClasicoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = PartidoClasico.objects.all()
     serializer_class = PartidoClasicoSerializer
 
 class MiniPartidoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = MiniPartido.objects.all()
     serializer_class = MiniPartidoSerializer
 
 class LiquidacionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Liquidacion.objects.all()
     serializer_class = LiquidacionSerializer
