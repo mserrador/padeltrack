@@ -27,6 +27,11 @@ class MiembroGrupo(models.Model):
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
     es_admin = models.BooleanField(default=False)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['grupo', 'usuario'], name='unique_miembro_grupo_usuario'),
+        ]
+
     def __str__(self):
         return f"{self.usuario.username} en {self.grupo.nombre}"
     
@@ -61,10 +66,20 @@ class AsistenteSesion(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     estado_asistencia = models.CharField(max_length=20, choices=ESTADOS_ASISTENCIA, default='PENDIENTE')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['sesion', 'usuario'], name='unique_asistencia_sesion_usuario'),
+        ]
+
 class Pago(models.Model):
     sesion = models.ForeignKey(Sesion, on_delete=models.CASCADE)
     usuario_pagador = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     cantidad = models.DecimalField(max_digits=6, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['sesion'], name='unique_pago_por_sesion'),
+        ]
 
 class Liquidacion(models.Model):
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)

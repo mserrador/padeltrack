@@ -5,6 +5,8 @@ import MisGrupos from './pages/MisGrupos';
 import DetalleGrupo from './pages/DetalleGrupo';
 import DetalleSesion from './pages/DetalleSesion';
 import Login from './components/Login'
+import CrearSesion from './components/CrearSesion'
+
 
 function App() {
   return (
@@ -16,8 +18,8 @@ function App() {
           <Route path="/perfil" element={<h2>Pantalla: Mi Perfil</h2>} />
           <Route path="/grupos/:id" element={<DetalleGrupo />} />
           <Route path="/sesiones/:id" element={<DetalleSesion />} />
-          <Route path="/grupos/:id" element={<h2>Detalle del Grupo</h2>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/grupo/:id/nueva-sesion" element={<CrearSesion />} />
         </Routes>
       </main>
     </div>

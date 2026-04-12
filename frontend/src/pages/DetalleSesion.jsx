@@ -124,7 +124,7 @@ const DetalleSesion = () => {
 
       {/* ESTADO: FINALIZADA */}
       {sesion.estado === 'FINALIZADA' && (
-        <ResumenEconomico sesion={sesion} />
+        <ResumenEconomico sesion={sesion} recargarSesion={fetchSesion} />
       )}
     </div>
   );

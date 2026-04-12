@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 router = DefaultRouter()
 router.register(r'usuarios', UsuarioViewSet)
 router.register(r'grupos', GrupoViewSet)
-router.register(r'sesiones', SesionViewSet)
+router.register(r'sesiones', SesionViewSet, basename='sesion')
 router.register(r'asistencias', AsistenteSesionViewSet)
 router.register(r'pagos', PagoViewSet)
 router.register(r'partidos-clasicos', PartidoClasicoViewSet)

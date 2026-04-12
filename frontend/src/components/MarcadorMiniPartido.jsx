@@ -14,6 +14,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
   const [guardando, setGuardando] = useState(false);
 
   const enPista = [j1A, j2A, j1B, j2B].filter(Boolean).map(String);
+  const hayDuplicados = new Set(enPista).size !== enPista.length;
 
   const calcularRacha = (id1, id2) => {
     if (!id1 || !id2) return 0;
@@ -65,6 +66,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
 
   const finalizarJuego = async (equipoGanador) => {
     if (!j1A || !j2A || !j1B || !j2B) return alert("Faltan jugadores en la pista.");
+    if (hayDuplicados) return alert("No puedes repetir jugadores en la pista.");
     
     const corona = verificarRacha(equipoGanador);
     setGuardando(true);
@@ -186,10 +188,10 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
             <SelectorExclusivo valor={j1A} setValor={setJ1A} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2A} setValor={setJ2A} label="Selecciona Jug." />
             <div className="display-3 fw-bold my-4 text-white font-monospace">{puntosA}</div>
-            <button className="btn btn-info btn-lg w-100 fw-bold text-dark shadow mb-2" onClick={() => sumarPunto('A')} disabled={guardando}>
+            <button className="btn btn-info btn-lg w-100 fw-bold text-dark shadow mb-2" onClick={() => sumarPunto('A')} disabled={guardando || hayDuplicados}>
               + PUNTO
             </button>
-            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('A')} disabled={guardando || puntosA === '0'}>
+            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('A')} disabled={guardando || hayDuplicados || puntosA === '0'}>
               - Restar
             </button>
           </div>
@@ -206,14 +208,19 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
             <SelectorExclusivo valor={j1B} setValor={setJ1B} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2B} setValor={setJ2B} label="Selecciona Jug." />
             <div className="display-3 fw-bold my-4 text-white font-monospace">{puntosB}</div>
-            <button className="btn btn-danger btn-lg w-100 fw-bold shadow mb-2" onClick={() => sumarPunto('B')} disabled={guardando}>
+            <button className="btn btn-danger btn-lg w-100 fw-bold shadow mb-2" onClick={() => sumarPunto('B')} disabled={guardando || hayDuplicados}>
               + PUNTO
             </button>
-            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('B')} disabled={guardando || puntosB === '0'}>
+            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('B')} disabled={guardando || hayDuplicados || puntosB === '0'}>
               - Restar
             </button>
           </div>
         </div>
+        {hayDuplicados && (
+          <p className="text-danger text-center fw-bold mb-0">
+            Cada jugador solo puede estar una vez en la pista.
+          </p>
+        )}
       </div>
     </div>
   );

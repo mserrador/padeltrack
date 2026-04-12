@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import BalanceGlobal from '../components/BalanceGlobal';
 
@@ -7,6 +7,7 @@ const DetalleGrupo = () => {
   const { id } = useParams(); // Capturamos la ID de la URL
   const [grupo, setGrupo] = useState(null);
   const [sesiones, setSesiones] = useState([]);
+  const navigate = useNavigate();
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -49,7 +50,13 @@ const DetalleGrupo = () => {
           <Link to="/" className="text-decoration-none text-muted mb-2 d-block">← Volver a Mis Grupos</Link>
           <h2 className="fw-bold mb-0">{grupo.nombre}</h2>
         </div>
-        <button className="btn btn-success">+ Nueva Sesión</button>
+        {/* 3. Conecta el botón usando navigate */}
+        <button 
+          className="btn btn-success fw-bold shadow-sm"
+          onClick={() => navigate(`/grupo/${id}/nueva-sesion`)}
+        >
+          + Nueva Sesión
+        </button>
       </div>
 
       {/* Listado de Sesiones */}

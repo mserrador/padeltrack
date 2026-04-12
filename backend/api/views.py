@@ -20,24 +20,31 @@ class GrupoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         usuario = self.request.user
-        return Grupo.objects.filter(miembrogrupo__usuario=usuario)
+        return Grupo.objects.filter(miembrogrupo__usuario=usuario).distinct()
 
     
     @action(detail=True, methods=['get'])
     def balance(self, request, pk=None):
         grupo = self.get_object()
-        miembros = MiembroGrupo.objects.filter(grupo=grupo)
+        miembros = MiembroGrupo.objects.filter(grupo=grupo).select_related('usuario')
+
+        usuarios_unicos = []
+        vistos = set()
+        for miembro in miembros:
+            if miembro.usuario_id in vistos:
+                continue
+            vistos.add(miembro.usuario_id)
+            usuarios_unicos.append(miembro.usuario)
 
         balances = []
-        for miembro in miembros:
-            usuario = miembro.usuario
-            balance = 0.0
+        for usuario in usuarios_unicos:
+            total_balance = 0.0
 
-            # 1. Pagos adelantados en pistas de este grupo (A FAVOR)
+            # 1. Pagos adelantados (A FAVOR)
             pagos = Pago.objects.filter(sesion__grupo=grupo, usuario_pagador=usuario).aggregate(total=Sum('cantidad'))['total'] or 0.0
-            balance += float(pagos)
+            total_balance += float(pagos)
 
-            # 2. Coste de las pistas que ha jugado (EN CONTRA)
+            # 2. Coste de pistas jugadas (EN CONTRA)
             sesiones_finalizadas = Sesion.objects.filter(grupo=grupo, estado='FINALIZADA')
             for sesion in sesiones_finalizadas:
                 confirmados = AsistenteSesion.objects.filter(sesion=sesion, estado_asistencia='CONFIRMADO')
@@ -45,23 +52,21 @@ class GrupoViewSet(viewsets.ModelViewSet):
                     num_jugadores = confirmados.count()
                     if num_jugadores > 0:
                         coste_por_persona = float(sesion.coste_total) / num_jugadores
-                        balance -= coste_por_persona
+                        total_balance -= coste_por_persona
 
-            # 3. Bizums ENVIADOS a otros del grupo (A FAVOR, porque saldo mi deuda)
+            # 3. Bizums ENVIADOS (+) y RECIBIDOS (-)
             liq_enviadas = Liquidacion.objects.filter(grupo=grupo, pagador=usuario).aggregate(total=Sum('cantidad'))['total'] or 0.0
-            balance += float(liq_enviadas)
-
-            # 4. Bizums RECIBIDOS de otros (EN CONTRA, porque me están devolviendo lo que me debían)
             liq_recibidas = Liquidacion.objects.filter(grupo=grupo, receptor=usuario).aggregate(total=Sum('cantidad'))['total'] or 0.0
-            balance -= float(liq_recibidas)
+            
+            total_balance += float(liq_enviadas)
+            total_balance -= float(liq_recibidas)
 
             balances.append({
                 'usuario_id': usuario.id,
-                'usuario_nombre': usuario.username,
-                'balance': round(balance, 2)
+                'username': usuario.username, # <--- IMPORTANTE: usamos 'username'
+                'balance': round(total_balance, 2)
             })
 
-        # Ordenamos la lista: los que están más en verde arriba, los morosos abajo
         balances.sort(key=lambda x: x['balance'], reverse=True)
         return Response(balances)
     
@@ -76,8 +81,25 @@ class GrupoViewSet(viewsets.ModelViewSet):
 # Vista para Sesiones (Aquí es donde se planifican los partidos)
 class SesionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = Sesion.objects.all()
     serializer_class = SesionSerializer
+
+    def get_queryset(self):
+        queryset = Sesion.objects.all()
+        grupo_id = self.request.query_params.get('grupo')
+        if grupo_id:
+            queryset = queryset.filter(grupo_id=grupo_id)
+        return queryset
+    
+    def perform_create(self, serializer):
+        sesion = serializer.save()
+
+        AsistenteSesion.objects.create(
+            sesion=sesion,
+            usuario=self.request.user,
+            estado_asistencia='CONFIRMADO'
+        )
+
+
 
 # Vista para Asistencia (El "Voy/No voy")
 class AsistenteSesionViewSet(viewsets.ModelViewSet):

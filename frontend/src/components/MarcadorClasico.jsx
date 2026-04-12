@@ -13,10 +13,17 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
   const [j2A, setJ2A] = useState('');
   const [j1B, setJ1B] = useState('');
   const [j2B, setJ2B] = useState('');
+  const enPista = [j1A, j2A, j1B, j2B].filter(Boolean).map(String);
+  const hayDuplicados = new Set(enPista).size !== enPista.length;
 
   const handleGuardarPartido = async (e) => {
     e.preventDefault();
     if (!j1A || !j2A || !j1B || !j2B || !resultado) return alert("Completa todos los campos");
+
+    const jugadoresSeleccionados = [j1A, j2A, j1B, j2B].map(String);
+    if (new Set(jugadoresSeleccionados).size !== jugadoresSeleccionados.length) {
+      return alert("No puedes repetir jugadores en el mismo partido.");
+    }
     
     setGuardando(true);
     try {
@@ -42,11 +49,17 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
 
   // Componente auxiliar para no repetir tanto código en los <select>
   const SelectorJugador = ({ valor, setValor, label }) => (
-    <select className="form-select mb-2" value={valor} onChange={(e) => setValor(e.target.value)} required>
+    <select className="form-select mb-2" value={String(valor)} onChange={(e) => setValor(e.target.value)} required>
       <option value="">Selecciona {label}</option>
-      {confirmados.map(a => (
-        <option key={a.usuario} value={a.usuario}>{a.usuario_nombre}</option>
-      ))}
+      {confirmados
+        .filter((a) => {
+          const idJugador = String(a.usuario);
+          const idSeleccionado = String(valor);
+          return !enPista.includes(idJugador) || idJugador === idSeleccionado;
+        })
+        .map((a) => (
+          <option key={a.usuario} value={String(a.usuario)}>{a.usuario_nombre}</option>
+        ))}
     </select>
   );
 
@@ -85,9 +98,14 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5" disabled={guardando}>
+          <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5" disabled={guardando || hayDuplicados}>
             {guardando ? 'Guardando...' : '💾 Guardar Resultado'}
           </button>
+          {hayDuplicados && (
+            <p className="text-danger small text-center mt-2 mb-0 fw-bold">
+              Cada jugador solo puede aparecer una vez.
+            </p>
+          )}
         </form>
       </div>
     </div>
