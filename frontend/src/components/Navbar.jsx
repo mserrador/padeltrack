@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getUsuarioActual, logout } from '../services/authService';
 
-const Navbar = () => {
+const Navbar = ({ theme, cambiarTema }) => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const navigate = useNavigate();
   const usuario = getUsuarioActual();
@@ -14,9 +14,12 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-success shadow-sm">
+    <nav className={`navbar app-navbar navbar-expand-lg shadow-sm ${theme === 'dark' ? 'navbar-dark' : 'navbar-light'}`}>
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">🎾 PadelTrack</Link>
+        <Link className="navbar-brand fw-bold brand-mark" to="/">
+          <span className="brand-ball">🎾</span>
+          <span>PadelTrack</span>
+        </Link>
         
         <button className="navbar-toggler" type="button" onClick={() => setMenuAbierto(!menuAbierto)}>
           <span className="navbar-toggler-icon"></span>
@@ -27,20 +30,33 @@ const Navbar = () => {
             {usuario ? (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/">Mis Grupos</Link>
+                  <Link className="nav-link pt-nav-link" to="/">Mis Grupos</Link>
                 </li>
                 <li className="nav-item">
-                  <span className="nav-link text-white fw-bold">Hola, {usuario}</span>
+                  <span className="nav-link pt-nav-link fw-bold">Hola, {usuario}</span>
                 </li>
                 <li className="nav-item">
-                  <button className="btn btn-link nav-link" onClick={handleLogout}>Salir</button>
+                  <button className="btn btn-link nav-link pt-nav-link" onClick={handleLogout}>Salir</button>
                 </li>
               </>
             ) : (
-              <li className="nav-item">
-                <Link className="nav-link" to="/login">Iniciar Sesión</Link>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link className="nav-link pt-nav-link" to="/login">Iniciar Sesión</Link>
+                </li>
+              </>
             )}
+            <li className="nav-item ms-lg-2">
+              <button
+                type="button"
+                className="btn theme-toggle theme-toggle-icon"
+                onClick={cambiarTema}
+                aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            </li>
           </ul>
         </div>
       </div>

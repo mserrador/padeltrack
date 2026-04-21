@@ -45,7 +45,7 @@ const DetalleGrupo = () => {
   return (
     <div>
       {/* Cabecera del Grupo */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="panel-head d-flex justify-content-between align-items-center mb-4">
         <div>
           <Link to="/" className="text-decoration-none text-muted mb-2 d-block">← Volver a Mis Grupos</Link>
           <h2 className="fw-bold mb-0">{grupo.nombre}</h2>
@@ -53,7 +53,7 @@ const DetalleGrupo = () => {
         {/* 3. Conecta el botón usando navigate */}
         <button 
           className="btn btn-success fw-bold shadow-sm"
-          onClick={() => navigate(`/grupo/${id}/nueva-sesion`)}
+          onClick={() => navigate(`/grupos/${id}/nueva-sesion`)}
         >
           + Nueva Sesión
         </button>

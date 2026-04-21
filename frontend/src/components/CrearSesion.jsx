@@ -29,6 +29,15 @@ const CrearSesion = () => {
     }
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(`/grupos/${id}`);
+  };
+
   return (
     <div className="container mt-4">
       <div className="card shadow-sm border-0 p-4">
@@ -36,7 +45,7 @@ const CrearSesion = () => {
           <h3 className="fw-bold mb-0">Planificar Partido</h3>
           <button 
             className="btn-close" 
-            onClick={() => navigate(`/grupo/${id}`)}
+            onClick={handleBack}
           ></button>
         </div>
         
@@ -78,8 +87,8 @@ const CrearSesion = () => {
             </button>
             <button 
               type="button" 
-              className="btn btn-link text-muted" 
-              onClick={() => navigate(`/grupo/${id}`)}
+              className="btn btn-outline-secondary" 
+              onClick={handleBack}
             >
               Cancelar
             </button>

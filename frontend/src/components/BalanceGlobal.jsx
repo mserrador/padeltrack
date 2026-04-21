@@ -220,9 +220,9 @@ const BalanceGlobal = ({ grupoId }) => {
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
                     {/* OJO AQUÍ: Asegúrate de que tu LiquidacionSerializer devuelve pagador_nombre y receptor_nombre */}
-                    <span className="fw-bold text-dark">{mov.pagador_nombre}</span>
+                    <span className="fw-bold">{mov.pagador_nombre}</span>
                     <span className="text-muted mx-2">pagó a</span>
-                    <span className="fw-bold text-dark">{mov.receptor_nombre}</span>
+                    <span className="fw-bold">{mov.receptor_nombre}</span>
                   </div>
                   <span className="fw-bold text-success fs-5">+{mov.cantidad}€</span>
                 </div>

@@ -65,7 +65,7 @@ const DetalleSesion = () => {
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="panel-head mb-4">
         <Link to={`/grupos/${sesion.grupo}`} className="text-decoration-none text-muted mb-2 d-block">← Volver al Grupo</Link>
         <div className="d-flex justify-content-between align-items-center">
           <h2 className="fw-bold mb-0">{sesion.lugar}</h2>

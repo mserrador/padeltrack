@@ -28,8 +28,8 @@ const MisGrupos = () => {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">Mis Comunidades</h2>
+      <div className="panel-head d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold mb-0">Mis Grupos</h2>
         <button className="btn btn-success">+ Nuevo Grupo</button>
       </div>
 
@@ -41,7 +41,7 @@ const MisGrupos = () => {
             <div className="col-12 col-md-6 col-lg-4 mb-3" key={grupo.id}>
               <div className="card shadow-sm h-100 border-0">
                 <div className="card-body d-flex flex-column">
-                  <h5 className="card-title fw-bold text-dark">{grupo.nombre}</h5>
+                  <h5 className="card-title fw-bold">{grupo.nombre}</h5>
                   <p className="card-text text-muted small mb-4">
                     Creado el: {new Date(grupo.fecha_creacion).toLocaleDateString()}
                   </p>

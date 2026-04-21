@@ -170,8 +170,8 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
   };
 
   return (
-    <div className="card shadow-lg border-0 bg-dark text-white mb-4">
-      <div className="card-header bg-warning text-dark d-flex justify-content-between align-items-center py-3">
+    <div className="card shadow-lg border-0 mini-scoreboard mb-4">
+      <div className="card-header mini-scoreboard-header text-dark d-flex justify-content-between align-items-center py-3">
         <h4 className="mb-0 fw-bold">👑 Rey de la Pista (Ronda {(sesion.mini_partidos?.length || 0) + 1})</h4>
         <button className="btn btn-sm btn-dark fw-bold shadow-sm" onClick={hacerEquiposAleatorios}>
           🎲 Sorteo
@@ -187,16 +187,16 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
             </div>
             <SelectorExclusivo valor={j1A} setValor={setJ1A} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2A} setValor={setJ2A} label="Selecciona Jug." />
-            <div className="display-3 fw-bold my-4 text-white font-monospace">{puntosA}</div>
+            <div className="display-3 fw-bold my-4 mini-score-value font-monospace">{puntosA}</div>
             <button className="btn btn-info btn-lg w-100 fw-bold text-dark shadow mb-2" onClick={() => sumarPunto('A')} disabled={guardando || hayDuplicados}>
               + PUNTO
             </button>
-            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('A')} disabled={guardando || hayDuplicados || puntosA === '0'}>
+            <button className="btn btn-sm w-100 mini-btn-subtract" onClick={() => restarPunto('A')} disabled={guardando || hayDuplicados || puntosA === '0'}>
               - Restar
             </button>
           </div>
 
-          <div className="col-2 d-flex align-items-center justify-content-center fw-bold display-6 text-muted">
+          <div className="col-2 d-flex align-items-center justify-content-center fw-bold display-6 mini-vs">
             VS
           </div>
 
@@ -207,11 +207,11 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
             </div>
             <SelectorExclusivo valor={j1B} setValor={setJ1B} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2B} setValor={setJ2B} label="Selecciona Jug." />
-            <div className="display-3 fw-bold my-4 text-white font-monospace">{puntosB}</div>
+            <div className="display-3 fw-bold my-4 mini-score-value font-monospace">{puntosB}</div>
             <button className="btn btn-danger btn-lg w-100 fw-bold shadow mb-2" onClick={() => sumarPunto('B')} disabled={guardando || hayDuplicados}>
               + PUNTO
             </button>
-            <button className="btn btn-outline-light btn-sm w-100" onClick={() => restarPunto('B')} disabled={guardando || hayDuplicados || puntosB === '0'}>
+            <button className="btn btn-sm w-100 mini-btn-subtract" onClick={() => restarPunto('B')} disabled={guardando || hayDuplicados || puntosB === '0'}>
               - Restar
             </button>
           </div>
