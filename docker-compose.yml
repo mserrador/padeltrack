@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: padeltrack-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      CORS_ALLOW_ALL_ORIGINS: "False"
+      CORS_ALLOWED_ORIGINS: ""
+      SQLITE_PATH: "/app/backend/data/db.sqlite3"
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/app/backend/data
+
+volumes:
+  backend_data:
