@@ -1,4 +1,4 @@
-name: Despliegue Backend en VPS
+name: Despliegue PadelTrack VPS
 
 on:
   push:
@@ -6,18 +6,20 @@ on:
       - main
     paths:
       - "backend/**"
+      - "frontend/**"
       - "requirements.txt"
       - "docker-compose.yml"
+      - "Caddyfile"
       - ".dockerignore"
       - ".github/workflows/despliegue-backend-vps.yml"
   workflow_dispatch:
 
 concurrency:
-  group: despliegue-backend-produccion
+  group: despliegue-padeltrack-produccion
   cancel-in-progress: true
 
 jobs:
-  validar:
+  validar-backend:
     name: Validar backend Django
     runs-on: ubuntu-latest
     steps:
@@ -36,27 +38,68 @@ jobs:
         working-directory: backend
         run: python manage.py check
 
-  desplegar:
-    name: Desplegar en VPS
+  build-frontend:
+    name: Build frontend React
     runs-on: ubuntu-latest
-    needs: validar
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: /api/
+        run: npm run build
+
+  desplegar:
+    name: Desplegar backend y frontend en VPS
+    runs-on: ubuntu-latest
+    needs: [validar-backend, build-frontend]
     environment: backend-env
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend para despliegue
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: /api/
+        run: npm run build
       
-      - name: Subir archivos del backend a la VPS
+      - name: Subir archivos a la VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "backend,requirements.txt,docker-compose.yml,.dockerignore"
+          source: "backend,frontend/dist,requirements.txt,docker-compose.yml,Caddyfile,.dockerignore"
           target: ${{ secrets.VPS_APP_DIR }}
           overwrite: true
 
-      - name: Levantar backend con Docker Compose en la VPS
+      - name: Levantar stack backend + frontend en la VPS
         uses: appleboy/ssh-action@v1.2.0
         env:
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
@@ -65,15 +108,21 @@ jobs:
           CORS_ALLOW_ALL_ORIGINS: ${{ secrets.CORS_ALLOW_ALL_ORIGINS }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
           SQLITE_PATH: ${{ secrets.SQLITE_PATH }}
+          APP_DOMAIN: ${{ secrets.APP_DOMAIN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          envs: DJANGO_SECRET_KEY,DEBUG,ALLOWED_HOSTS,CORS_ALLOW_ALL_ORIGINS,CORS_ALLOWED_ORIGINS,SQLITE_PATH
+          envs: DJANGO_SECRET_KEY,DEBUG,ALLOWED_HOSTS,CORS_ALLOW_ALL_ORIGINS,CORS_ALLOWED_ORIGINS,SQLITE_PATH,APP_DOMAIN
           script: |
             set -e
             cd "${{ secrets.VPS_APP_DIR }}"
+
+            export DOCKER_CONFIG="${{ secrets.VPS_APP_DIR }}/.docker-ci"
+            export BUILDX_CONFIG="${DOCKER_CONFIG}/buildx"
+            mkdir -p "${DOCKER_CONFIG}" "${BUILDX_CONFIG}/activity" "${BUILDX_CONFIG}/defaults" "${BUILDX_CONFIG}/instances"
+            chmod -R 700 "${DOCKER_CONFIG}"
 
             umask 177
             cat > .env <<EOF
@@ -83,7 +132,8 @@ jobs:
             CORS_ALLOW_ALL_ORIGINS=${CORS_ALLOW_ALL_ORIGINS}
             CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
             SQLITE_PATH=${SQLITE_PATH}
+            APP_DOMAIN=${APP_DOMAIN}
             EOF
 
-            docker compose up -d --build backend
+            DOCKER_BUILDKIT=0 docker compose up -d --build
             docker compose ps
