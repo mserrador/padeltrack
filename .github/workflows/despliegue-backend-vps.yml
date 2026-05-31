@@ -135,5 +135,6 @@ jobs:
             APP_DOMAIN=${APP_DOMAIN}
             EOF
 
-            DOCKER_BUILDKIT=0 docker compose up -d --build
+            DOCKER_BUILDKIT=0 docker build -f backend/Dockerfile -t padeltrack-backend:latest .
+            docker compose up -d --no-build
             docker compose ps
