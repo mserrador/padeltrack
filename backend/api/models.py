@@ -47,6 +47,7 @@ class Sesion(models.Model):
     ]
     
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
+    creado_por = models.ForeignKey(Usuario, null=True, blank=True, on_delete=models.SET_NULL, related_name='sesiones_creadas')
     fecha_hora = models.DateTimeField(null=True, blank=True)
     lugar = models.CharField(max_length=200)
     coste_total = models.DecimalField(max_digits=6, decimal_places=2)

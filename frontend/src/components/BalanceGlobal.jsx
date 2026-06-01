@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 
 const BalanceGlobal = ({ grupoId }) => {
   const [balances, setBalances] = useState([]);
   const [historial, setHistorial] = useState([]);
+  const [paginaHistorial, setPaginaHistorial] = useState(1);
   const [cargando, setCargando] = useState(true);
 
   const [pagador, setPagador] = useState('');
   const [receptor, setReceptor] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const cabeceraBalanceRef = useRef(null);
   const seleccionDuplicada = Boolean(pagador) && Boolean(receptor) && String(pagador) === String(receptor);
 
   const opcionesPagador = balances.filter((b) => String(b.usuario_id) !== String(receptor));
@@ -71,6 +73,10 @@ const BalanceGlobal = ({ grupoId }) => {
     fetchData();
   }, [grupoId]);
 
+  useEffect(() => {
+    setPaginaHistorial(1);
+  }, [historial.length]);
+
   const handleRegistrarBizum = async (e) => {
     e.preventDefault();
     if (!pagador || !receptor || !cantidad || seleccionDuplicada) {
@@ -107,17 +113,27 @@ const BalanceGlobal = ({ grupoId }) => {
     if (usuarioReceptor) setReceptor(usuarioReceptor.usuario_id);
     setCantidad(cantidadSugerida);
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const topCabecera = cabeceraBalanceRef.current?.getBoundingClientRect().top;
+    if (typeof topCabecera === 'number') {
+      const offsetNavbar = 90;
+      const destino = window.scrollY + topCabecera - offsetNavbar;
+      window.scrollTo({ top: Math.max(destino, 0), behavior: 'smooth' });
+    }
   };
 
   if (cargando) return <div className="spinner-border text-success spinner-border-sm mt-3"></div>;
 
   const transacciones = calcularLiquidaciones(balances);
+  const elementosPorPagina = 5;
+  const totalPaginasHistorial = Math.max(1, Math.ceil(historial.length / elementosPorPagina));
+  const paginaActualHistorial = Math.min(paginaHistorial, totalPaginasHistorial);
+  const inicioHistorial = (paginaActualHistorial - 1) * elementosPorPagina;
+  const historialPaginado = historial.slice(inicioHistorial, inicioHistorial + elementosPorPagina);
 
   return (
     <div className="card shadow-sm border-0 bg-white mt-4 mb-5">
-      <div className="card-header bg-dark text-white py-3">
-        <h5 className="mb-0 fw-bold">📊 Estado de Cuentas Global</h5>
+      <div ref={cabeceraBalanceRef} className="card-header bg-dark text-white py-3">
+        <h5 className="mb-0 fw-bold">Estado de Cuentas Global</h5>
       </div>
       
       <div className="card-body p-4">
@@ -165,7 +181,7 @@ const BalanceGlobal = ({ grupoId }) => {
                   <input type="number" step="0.01" min="0.1" className="form-control text-center fw-bold" placeholder="0.00" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
                 </div>
                 <button type="submit" className="btn btn-dark w-100 fw-bold" disabled={guardando || seleccionDuplicada}>
-                  {guardando ? 'Enviando...' : '💸 Registrar Pago'}
+                  {guardando ? 'Enviando...' : 'Registrar Pago'}
                 </button>
                 {seleccionDuplicada && (
                   <p className="text-danger small mt-2 mb-0 fw-bold text-center">
@@ -178,10 +194,10 @@ const BalanceGlobal = ({ grupoId }) => {
         </div>
 
         <div className="mt-5">
-          <h4 className="fw-bold mb-3">🤝 Cómo saldar deudas</h4>
+          <h4 className="fw-bold mb-3">Cómo saldar deudas</h4>
           {transacciones.length === 0 ? (
             <div className="alert alert-light border shadow-sm">
-              ✅ ¡Cuentas claras! Nadie debe nada a nadie.
+              Cuentas claras. Nadie debe nada a nadie.
             </div>
           ) : (
             <div className="list-group shadow-sm">
@@ -209,13 +225,14 @@ const BalanceGlobal = ({ grupoId }) => {
 
         {/* BLOQUE INFERIOR: Historial de Movimientos */}
         <hr className="text-muted opacity-25" />
-        <h6 className="fw-bold text-secondary mb-3 mt-4">📖 Historial de Movimientos</h6>
+        <h6 className="fw-bold text-secondary mb-3 mt-4">Historial de Movimientos</h6>
         
         {historial.length === 0 ? (
           <p className="text-muted small text-center bg-light p-3 rounded">Aún no hay transferencias registradas en este grupo.</p>
         ) : (
-          <div className="list-group list-group-flush shadow-sm border rounded">
-            {historial.map((mov) => (
+          <>
+            <div className="list-group list-group-flush shadow-sm border rounded">
+            {historialPaginado.map((mov) => (
               <div key={`mov_${mov.id}`} className="list-group-item p-3">
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
@@ -227,11 +244,38 @@ const BalanceGlobal = ({ grupoId }) => {
                   <span className="fw-bold text-success fs-5">+{mov.cantidad}€</span>
                 </div>
                 <small className="text-muted">
-                  🗓️ {new Date(mov.fecha).toLocaleDateString()} a las {new Date(mov.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {new Date(mov.fecha).toLocaleDateString()} a las {new Date(mov.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </small>
               </div>
             ))}
-          </div>
+            </div>
+
+            {totalPaginasHistorial > 1 && (
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <small className="text-muted">
+                  Página {paginaActualHistorial} de {totalPaginasHistorial}
+                </small>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={paginaActualHistorial === 1}
+                    onClick={() => setPaginaHistorial((previo) => Math.max(previo - 1, 1))}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={paginaActualHistorial === totalPaginasHistorial}
+                    onClick={() => setPaginaHistorial((previo) => Math.min(previo + 1, totalPaginasHistorial))}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

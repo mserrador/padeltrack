@@ -83,7 +83,7 @@ const CrearSesion = () => {
           
           <div className="d-grid gap-2">
             <button type="submit" className="btn btn-success py-2 fw-bold">
-              🚀 Crear Sesión y Avisar
+              Crear Sesión y Avisar
             </button>
             <button 
               type="button" 

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getUsuarioActual, logout } from '../services/authService';
 
 const Navbar = ({ theme, cambiarTema }) => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const usuario = getUsuarioActual();
+  const estaEnZonaPrivada = location.pathname.startsWith('/app') || location.pathname.startsWith('/grupos/') || location.pathname.startsWith('/sesiones/') || location.pathname.includes('/nueva-sesion');
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
     window.location.reload();
   };
 
@@ -17,7 +19,6 @@ const Navbar = ({ theme, cambiarTema }) => {
     <nav className={`navbar app-navbar navbar-expand-lg shadow-sm ${theme === 'dark' ? 'navbar-dark' : 'navbar-light'}`}>
       <div className="container">
         <Link className="navbar-brand fw-bold brand-mark" to="/">
-          <span className="brand-ball">🎾</span>
           <span>PadelTrack</span>
         </Link>
         
@@ -30,7 +31,7 @@ const Navbar = ({ theme, cambiarTema }) => {
             {usuario ? (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link pt-nav-link" to="/">Mis Grupos</Link>
+                  <Link className="nav-link pt-nav-link" to="/app">Mis Grupos</Link>
                 </li>
                 <li className="nav-item">
                   <span className="nav-link pt-nav-link fw-bold">Hola, {usuario}</span>
@@ -44,6 +45,14 @@ const Navbar = ({ theme, cambiarTema }) => {
                 <li className="nav-item">
                   <Link className="nav-link pt-nav-link" to="/login">Iniciar Sesión</Link>
                 </li>
+                <li className="nav-item">
+                  <Link className="nav-link pt-nav-link" to="/registro">Crear cuenta</Link>
+                </li>
+                {estaEnZonaPrivada && (
+                  <li className="nav-item">
+                    <Link className="nav-link pt-nav-link" to="/">Ir a inicio</Link>
+                  </li>
+                )}
               </>
             )}
             <li className="nav-item ms-lg-2">

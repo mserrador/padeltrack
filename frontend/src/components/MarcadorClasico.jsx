@@ -66,7 +66,7 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
   return (
     <div className="card shadow-sm border-0 bg-white">
       <div className="card-header bg-dark text-white text-center py-3">
-        <h4 className="mb-0 fw-bold">🎾 Partido Clásico</h4>
+        <h4 className="mb-0 fw-bold">Partido Clásico</h4>
       </div>
       <div className="card-body">
         <form onSubmit={handleGuardarPartido}>
@@ -99,7 +99,7 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
           </div>
 
           <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5" disabled={guardando || hayDuplicados}>
-            {guardando ? 'Guardando...' : '💾 Guardar Resultado'}
+            {guardando ? 'Guardando...' : 'Guardar Resultado'}
           </button>
           {hayDuplicados && (
             <p className="text-danger small text-center mt-2 mb-0 fw-bold">

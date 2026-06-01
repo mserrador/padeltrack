@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import RutaProtegida from './components/RutaProtegida';
+import Landing from './pages/Landing';
+import NoEncontrado from './pages/NoEncontrado';
 import MisGrupos from './pages/MisGrupos'; 
 import DetalleGrupo from './pages/DetalleGrupo';
 import DetalleSesion from './pages/DetalleSesion';
 import Login from './components/Login'
 import CrearSesion from './components/CrearSesion'
+import Registro from './pages/Registro';
 
 const THEME_STORAGE_KEY = 'padeltrack-theme';
 
@@ -29,13 +33,16 @@ function App() {
       <Navbar theme={theme} cambiarTema={cambiarTema} />
       <main className="container py-4 app-main fade-in">
         <Routes>
-          <Route path="/" element={<MisGrupos />} />
-          <Route path="/perfil" element={<h2>Pantalla: Mi Perfil</h2>} />
-          <Route path="/grupos/:id" element={<DetalleGrupo />} />
-          <Route path="/sesiones/:id" element={<DetalleSesion />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/app" element={<RutaProtegida><MisGrupos /></RutaProtegida>} />
+          <Route path="/perfil" element={<RutaProtegida><h2>Pantalla: Mi Perfil</h2></RutaProtegida>} />
+          <Route path="/grupos/:id" element={<RutaProtegida><DetalleGrupo /></RutaProtegida>} />
+          <Route path="/sesiones/:id" element={<RutaProtegida><DetalleSesion /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
-          <Route path="/grupos/:id/nueva-sesion" element={<CrearSesion />} />
-          <Route path="/grupo/:id/nueva-sesion" element={<CrearSesion />} />
+          <Route path="/registro" element={<Registro />} />
+          <Route path="/grupos/:id/nueva-sesion" element={<RutaProtegida><CrearSesion /></RutaProtegida>} />
+          <Route path="/grupo/:id/nueva-sesion" element={<RutaProtegida><CrearSesion /></RutaProtegida>} />
+          <Route path="*" element={<NoEncontrado />} />
         </Routes>
       </main>
     </div>

@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
-import { login } from '../services/authService';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { getUsuarioActual, login } from '../services/authService';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (localStorage.getItem('token') && getUsuarioActual()) {
+      navigate('/app');
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await login(username, password);
-      navigate('/');
+      navigate('/app');
       window.location.reload(); 
     } catch (error) {
       alert("Usuario o contraseña incorrectos");
@@ -36,6 +42,9 @@ const Login = () => {
               </div>
               <button type="submit" className="btn btn-success w-100">Iniciar Sesión</button>
             </form>
+            <p className="text-center small mt-3 mb-0">
+              ¿Nuevo por aquí? <Link to="/registro">Crear cuenta</Link>
+            </p>
           </div>
         </div>
       </div>

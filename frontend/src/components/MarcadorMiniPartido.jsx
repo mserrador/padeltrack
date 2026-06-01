@@ -84,7 +84,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
       });
 
       if (corona) {
-        alert("👑 ¡3 VICTORIAS SEGUIDAS! 👑\nLos reyes van al banquillo. ¡El marcador de rachas se reinicia para todos!");
+        alert("3 victorias seguidas.\nLos reyes van al banquillo y el marcador de rachas se reinicia para todos.");
         if (equipoGanador === 'A') { setJ1A(''); setJ2A(''); }
         else { setJ1B(''); setJ2B(''); }
       } else {
@@ -172,9 +172,9 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
   return (
     <div className="card shadow-lg border-0 mini-scoreboard mb-4">
       <div className="card-header mini-scoreboard-header text-dark d-flex justify-content-between align-items-center py-3">
-        <h4 className="mb-0 fw-bold">👑 Rey de la Pista (Ronda {(sesion.mini_partidos?.length || 0) + 1})</h4>
+        <h4 className="mb-0 fw-bold">Rey de la Pista (Ronda {(sesion.mini_partidos?.length || 0) + 1})</h4>
         <button className="btn btn-sm btn-dark fw-bold shadow-sm" onClick={hacerEquiposAleatorios}>
-          🎲 Sorteo
+          Sorteo
         </button>
       </div>
       
@@ -183,7 +183,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
           <div className="col-5">
             <h5 className="fw-bold text-info mb-1">EQUIPO A</h5>
             <div style={{ height: '30px' }} className="mb-2">
-              {rachaA > 0 && <span className="badge bg-danger fs-6 shadow-sm">🔥 Racha: {rachaA}</span>}
+              {rachaA > 0 && <span className="badge bg-danger fs-6 shadow-sm">Racha: {rachaA}</span>}
             </div>
             <SelectorExclusivo valor={j1A} setValor={setJ1A} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2A} setValor={setJ2A} label="Selecciona Jug." />
@@ -203,7 +203,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
           <div className="col-5">
             <h5 className="fw-bold text-danger mb-1">EQUIPO B</h5>
             <div style={{ height: '30px' }} className="mb-2">
-              {rachaB > 0 && <span className="badge bg-danger fs-6 shadow-sm">🔥 Racha: {rachaB}</span>}
+              {rachaB > 0 && <span className="badge bg-danger fs-6 shadow-sm">Racha: {rachaB}</span>}
             </div>
             <SelectorExclusivo valor={j1B} setValor={setJ1B} label="Selecciona Jug." />
             <SelectorExclusivo valor={j2B} setValor={setJ2B} label="Selecciona Jug." />

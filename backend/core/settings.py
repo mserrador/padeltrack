@@ -152,7 +152,10 @@ STORAGES = {
 
 # --- CONFIGURACIÓN DE CORS ---
 CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', default=False)
-CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:5173,http://127.0.0.1:5173',
+)
 
 # Le decimos a Django que cuando en el futuro creemos la API, nos deje usarla con la interfaz web
 REST_FRAMEWORK = {
