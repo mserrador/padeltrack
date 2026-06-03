@@ -5,7 +5,8 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
   // Filtramos para mostrar solo a los que confirmaron asistencia
   const confirmados = asistentes.filter(a => a.estado_asistencia === 'CONFIRMADO');
 
-  const [resultado, setResultado] = useState('');
+  const [juegosA, setJuegosA] = useState('');
+  const [juegosB, setJuegosB] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   // Estados provisionales para los jugadores seleccionados (IDs)
@@ -18,12 +19,25 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
 
   const handleGuardarPartido = async (e) => {
     e.preventDefault();
-    if (!j1A || !j2A || !j1B || !j2B || !resultado) return alert("Completa todos los campos");
+    if (!j1A || !j2A || !j1B || !j2B || juegosA === '' || juegosB === '') return alert("Completa todos los campos");
 
     const jugadoresSeleccionados = [j1A, j2A, j1B, j2B].map(String);
     if (new Set(jugadoresSeleccionados).size !== jugadoresSeleccionados.length) {
       return alert("No puedes repetir jugadores en el mismo partido.");
     }
+
+    const puntosA = Number(juegosA);
+    const puntosB = Number(juegosB);
+
+    if (!Number.isInteger(puntosA) || !Number.isInteger(puntosB) || puntosA < 0 || puntosB < 0) {
+      return alert('Introduce un resultado válido con números enteros no negativos.');
+    }
+
+    if (puntosA === puntosB) {
+      return alert('El partido clásico no puede guardarse con empate.');
+    }
+
+    const resultado = `${puntosA}-${puntosB}`;
     
     setGuardando(true);
     try {
@@ -37,11 +51,17 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
       });
       alert("¡Partido guardado con éxito!");
       // Limpiamos el formulario
-      setResultado('');
+      setJuegosA('');
+      setJuegosB('');
       recargarSesion(); 
     } catch (error) {
       console.error("Error al guardar:", error);
-      alert("Hubo un error al guardar el partido");
+      const detalle = error.response?.data;
+      const mensaje =
+        detalle?.detail ||
+        (Array.isArray(detalle?.non_field_errors) ? detalle.non_field_errors[0] : null) ||
+        'Hubo un error al guardar el partido';
+      alert(mensaje);
     } finally {
       setGuardando(false);
     }
@@ -87,15 +107,39 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
           </div>
 
           <div className="mb-4">
-            <label className="fw-bold form-label">Resultado (Ej: 6-4 / 4-6 / 7-6)</label>
-            <input 
-              type="text" 
-              className="form-control text-center fs-5" 
-              placeholder="Resultado final" 
-              value={resultado} 
-              onChange={(e) => setResultado(e.target.value)} 
-              required 
-            />
+            <label className="fw-bold form-label">Resultado final</label>
+            <div className="row g-2 align-items-center">
+              <div className="col-5">
+                <label className="form-label small text-muted fw-bold">Juegos Equipo A</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="form-control text-center fs-5"
+                  placeholder="6"
+                  value={juegosA}
+                  onChange={(e) => setJuegosA(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-2 text-center fw-bold fs-4 text-muted">-</div>
+              <div className="col-5">
+                <label className="form-label small text-muted fw-bold">Juegos Equipo B</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="form-control text-center fs-5"
+                  placeholder="2"
+                  value={juegosB}
+                  onChange={(e) => setJuegosB(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <p className="small text-muted mt-2 mb-0 text-center">
+              Se guardará con formato {juegosA === '' ? 'X' : juegosA}-{juegosB === '' ? 'Y' : juegosB}.
+            </p>
           </div>
 
           <button type="submit" className="btn btn-primary w-100 py-3 fw-bold fs-5" disabled={guardando || hayDuplicados}>

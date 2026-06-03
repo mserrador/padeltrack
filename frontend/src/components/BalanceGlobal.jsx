@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+import { getUsuarioIdActual } from '../services/authService';
 
-const BalanceGlobal = ({ grupoId }) => {
+const BalanceGlobal = ({ grupoId, esAdmin }) => {
   const [balances, setBalances] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [paginaHistorial, setPaginaHistorial] = useState(1);
@@ -12,23 +13,24 @@ const BalanceGlobal = ({ grupoId }) => {
   const [cantidad, setCantidad] = useState('');
   const [guardando, setGuardando] = useState(false);
   const cabeceraBalanceRef = useRef(null);
+  const miUsuarioId = getUsuarioIdActual();
   const seleccionDuplicada = Boolean(pagador) && Boolean(receptor) && String(pagador) === String(receptor);
+  const pagoGuiadoSeleccionado = Boolean(pagador) && Boolean(receptor) && Boolean(cantidad);
 
   const opcionesPagador = balances.filter((b) => String(b.usuario_id) !== String(receptor));
   const opcionesReceptor = balances.filter((b) => String(b.usuario_id) !== String(pagador));
 
-  // EL ALGORITMO (Usando estrictamente 'username')
   const calcularLiquidaciones = (datos) => {
     if (!datos || datos.length === 0) return [];
 
     let deudores = datos
       .filter(b => b.balance < 0)
-      .map(b => ({ username: b.username, balance: Math.abs(b.balance) }))
+      .map(b => ({ usuario_id: b.usuario_id, username: b.username, balance: Math.abs(b.balance) }))
       .sort((a, b) => b.balance - a.balance);
 
     let acreedores = datos
       .filter(b => b.balance > 0)
-      .map(b => ({ username: b.username, balance: b.balance }))
+      .map(b => ({ usuario_id: b.usuario_id, username: b.username, balance: b.balance }))
       .sort((a, b) => b.balance - a.balance);
 
     const transacciones = [];
@@ -39,7 +41,9 @@ const BalanceGlobal = ({ grupoId }) => {
       
       if (monto > 0.01) { // Evitamos micro-deudas por decimales
         transacciones.push({
+          de_id: deudores[i].usuario_id,
           de: deudores[i].username,
+          a_id: acreedores[j].usuario_id,
           a: acreedores[j].username,
           cantidad: monto.toFixed(2)
         });
@@ -61,7 +65,10 @@ const BalanceGlobal = ({ grupoId }) => {
         api.get(`grupos/${grupoId}/historial_liquidaciones/`)
       ]);
       setBalances(resBalances.data);
-      setHistorial(resHistorial.data);
+      const historialOrdenado = (Array.isArray(resHistorial.data) ? resHistorial.data : []).sort(
+        (a, b) => new Date(b.fecha) - new Date(a.fecha)
+      );
+      setHistorial(historialOrdenado);
     } catch (error) {
       console.error("Error al cargar datos económicos:", error);
     } finally {
@@ -79,6 +86,10 @@ const BalanceGlobal = ({ grupoId }) => {
 
   const handleRegistrarBizum = async (e) => {
     e.preventDefault();
+    if (!esAdmin && !pagoGuiadoSeleccionado) {
+      return alert('Selecciona primero uno de los pagos sugeridos.');
+    }
+
     if (!pagador || !receptor || !cantidad || seleccionDuplicada) {
       return alert("Datos inválidos. El pagador y el receptor deben ser distintos.");
     }
@@ -97,20 +108,21 @@ const BalanceGlobal = ({ grupoId }) => {
       alert("¡Transferencia registrada con éxito!");
     } catch (error) {
       console.error("Error:", error);
-      alert("Hubo un error al registrar la transferencia.");
+      const detalle = error.response?.data;
+      const mensaje =
+        detalle?.detail ||
+        (Array.isArray(detalle?.non_field_errors) ? detalle.non_field_errors[0] : null) ||
+        (Array.isArray(detalle?.cantidad) ? detalle.cantidad[0] : null) ||
+        'Hubo un error al registrar la transferencia.';
+      alert(mensaje);
     } finally {
       setGuardando(false);
     }
   };
 
-  // Función para rellenar los selects cuando clicas el botón "Registrar Bizum"
-  const preRellenarBizum = (deUsername, aUsername, cantidadSugerida) => {
-    // Buscamos por username, tal cual viene del algoritmo
-    const usuarioPagador = balances.find(b => b.username === deUsername);
-    const usuarioReceptor = balances.find(b => b.username === aUsername);
-    
-    if (usuarioPagador) setPagador(usuarioPagador.usuario_id);
-    if (usuarioReceptor) setReceptor(usuarioReceptor.usuario_id);
+  const preRellenarBizum = (pagadorId, receptorId, cantidadSugerida) => {
+    setPagador(String(pagadorId));
+    setReceptor(String(receptorId));
     setCantidad(cantidadSugerida);
     
     const topCabecera = cabeceraBalanceRef.current?.getBoundingClientRect().top;
@@ -160,27 +172,32 @@ const BalanceGlobal = ({ grupoId }) => {
 
           <div className="col-12 col-md-5">
             <h6 className="fw-bold text-secondary mb-3">Registrar Transferencia</h6>
-            <div className="card bg-light border-0 p-3 shadow-sm">
+            <div className="card bg-light border-0 p-3 shadow-sm balance-transfer-form">
               <form onSubmit={handleRegistrarBizum}>
                 <div className="mb-2">
                   <label className="form-label small fw-bold text-muted">¿Quién envía?</label>
-                  <select className="form-select form-select-sm" value={pagador} onChange={(e) => setPagador(e.target.value)} required>
+                  <select className="form-select form-select-sm" value={pagador} onChange={(e) => setPagador(e.target.value)} required disabled={!esAdmin}>
                     <option value="">Seleccionar...</option>
                     {opcionesPagador.map(b => <option key={`p_${b.usuario_id}`} value={b.usuario_id}>{b.username}</option>)}
                   </select>
                 </div>
                 <div className="mb-2">
                   <label className="form-label small fw-bold text-muted">¿A quién?</label>
-                  <select className="form-select form-select-sm" value={receptor} onChange={(e) => setReceptor(e.target.value)} required>
+                  <select className="form-select form-select-sm" value={receptor} onChange={(e) => setReceptor(e.target.value)} required disabled={!esAdmin}>
                     <option value="">Seleccionar...</option>
                     {opcionesReceptor.map(b => <option key={`r_${b.usuario_id}`} value={b.usuario_id}>{b.username}</option>)}
                   </select>
                 </div>
                 <div className="mb-3">
                   <label className="form-label small fw-bold text-muted">Cantidad (€)</label>
-                  <input type="number" step="0.01" min="0.1" className="form-control text-center fw-bold" placeholder="0.00" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
+                  <input type="number" step="0.01" min="0.1" className="form-control text-center fw-bold" placeholder="0.00" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required readOnly={!esAdmin} />
                 </div>
-                <button type="submit" className="btn btn-dark w-100 fw-bold" disabled={guardando || seleccionDuplicada}>
+                {!esAdmin && (
+                  <p className="text-muted small mb-3">
+                    Selecciona uno de tus pagos sugeridos para rellenar el formulario. No puedes modificar manualmente los jugadores ni la cantidad.
+                  </p>
+                )}
+                <button type="submit" className="btn btn-dark w-100 fw-bold" disabled={guardando || seleccionDuplicada || (!esAdmin && !pagoGuiadoSeleccionado)}>
                   {guardando ? 'Enviando...' : 'Registrar Pago'}
                 </button>
                 {seleccionDuplicada && (
@@ -210,12 +227,14 @@ const BalanceGlobal = ({ grupoId }) => {
                   </div>
                   <div className="text-end">
                     <span className="badge bg-dark fs-6">{t.cantidad}€</span>
-                    <button 
-                      className="btn btn-sm btn-outline-primary ms-3"
-                      onClick={() => preRellenarBizum(t.de, t.a, t.cantidad)}
-                    >
-                      Registrar Bizum
-                    </button>
+                    {(esAdmin || Number(t.de_id) === Number(miUsuarioId)) && (
+                      <button 
+                        className="btn btn-sm btn-outline-primary ms-3"
+                        onClick={() => preRellenarBizum(t.de_id, t.a_id, t.cantidad)}
+                      >
+                        Registrar Bizum
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

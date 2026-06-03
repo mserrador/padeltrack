@@ -34,6 +34,13 @@ const DetalleSesion = () => {
     return local.toISOString().slice(0, 16);
   };
 
+  const obtenerMinimoFechaHora = () => {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    const local = new Date(ahora.getTime() - offset * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
   const cargarPermisosSesion = async (sesionData) => {
     if (!sesionData?.grupo) {
       setPuedeEditarSesion(false);
@@ -156,6 +163,12 @@ const DetalleSesion = () => {
         fetchSesion();
       } catch (error) {
         console.error("Error al cambiar estado:", error);
+        const detalle = error.response?.data;
+        const mensaje =
+          (Array.isArray(detalle?.estado) ? detalle.estado[0] : null) ||
+          detalle?.detail ||
+          'No se pudo cambiar el estado de la sesión.';
+        alert(mensaje);
       }
     }
   };
@@ -178,7 +191,12 @@ const DetalleSesion = () => {
       await fetchSesion();
     } catch (error) {
       const detalle = error.response?.data;
-      const mensaje = detalle?.detail || 'No se pudo guardar la edición de la sesión.';
+      const mensaje =
+        (Array.isArray(detalle?.fecha_hora) ? detalle.fecha_hora[0] : null) ||
+        (Array.isArray(detalle?.coste_total) ? detalle.coste_total[0] : null) ||
+        (Array.isArray(detalle?.estado) ? detalle.estado[0] : null) ||
+        detalle?.detail ||
+        'No se pudo guardar la edición de la sesión.';
       alert(mensaje);
     } finally {
       setGuardandoEdicion(false);
@@ -273,6 +291,7 @@ const DetalleSesion = () => {
                   <input
                     type="datetime-local"
                     className="form-control"
+                    min={obtenerMinimoFechaHora()}
                     value={datosEdicion.fecha_hora}
                     onChange={(e) => setDatosEdicion((previo) => ({ ...previo, fecha_hora: e.target.value }))}
                     required
@@ -346,9 +365,16 @@ const DetalleSesion = () => {
             )}
 
             {puedeEditarSesion && (
-              <button onClick={() => cambiarEstadoSesion('EN_CURSO')} className="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm">
+              <>
+                <button onClick={() => cambiarEstadoSesion('EN_CURSO')} className="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm" disabled={numConfirmados < 4}>
                 Iniciar Sesión en Pista
-              </button>
+                </button>
+                {numConfirmados < 4 && (
+                  <p className="text-muted small mt-2 mb-0 text-center">
+                    Se necesitan al menos 4 jugadores en estado confirmado para iniciar la sesión.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -379,7 +405,7 @@ const DetalleSesion = () => {
       {/* ESTADO: FINALIZADA */}
       {sesion.estado === 'FINALIZADA' && (
         <>
-          <ResumenEconomico sesion={sesion} recargarSesion={fetchSesion} esAdminGrupo={esAdminGrupo} />
+          <ResumenEconomico sesion={sesion} recargarSesion={fetchSesion} esAdminGrupo={esAdminGrupo} puedeGestionarPagador={puedeEditarSesion} />
           <ResultadosSesion sesion={sesion} />
         </>
       )}

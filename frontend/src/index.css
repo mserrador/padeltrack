@@ -251,6 +251,24 @@ small.text-muted {
   color: var(--text-primary);
 }
 
+.list-group-item-action {
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+  background: color-mix(in srgb, var(--surface-soft) 86%, var(--bg-main)) !important;
+  color: var(--text-primary) !important;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+}
+
+:root[data-theme='light'] .list-group-item-action:hover,
+:root[data-theme='light'] .list-group-item-action:focus {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface)) !important;
+  color: var(--text-primary) !important;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border)) !important;
+}
+
 .bg-light,
 .bg-white,
 .alert-light {
@@ -581,6 +599,63 @@ small.text-muted {
 .resumen-pagos-formulario .form-select option {
   background: var(--input-bg);
   color: var(--input-text);
+}
+
+.balance-transfer-form {
+  background: linear-gradient(145deg, var(--surface-soft) 0%, color-mix(in srgb, var(--surface) 82%, var(--bg-main)) 100%) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.balance-transfer-form .form-control,
+.balance-transfer-form .form-select {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--border) !important;
+}
+
+.balance-transfer-form .form-select option {
+  background: var(--input-bg);
+  color: var(--input-text);
+}
+
+.balance-transfer-form .form-control:disabled,
+.balance-transfer-form .form-select:disabled,
+.balance-transfer-form .form-control[readonly] {
+  background: color-mix(in srgb, var(--input-bg) 78%, var(--surface-soft)) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+.balance-transfer-form .form-select:disabled {
+  background-image: none !important;
+}
+
+.balance-transfer-form .form-select:disabled option,
+.balance-transfer-form .form-control:disabled::placeholder,
+.balance-transfer-form .form-control[readonly]::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+.resumen-pagos-formulario .form-control:disabled,
+.resumen-pagos-formulario .form-select:disabled,
+.resumen-pagos-formulario .form-control[readonly] {
+  background: color-mix(in srgb, var(--input-bg) 78%, var(--surface-soft)) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--text-secondary);
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+.resumen-pagos-formulario .form-select:disabled option,
+.resumen-pagos-formulario .form-control:disabled::placeholder,
+.resumen-pagos-formulario .form-control[readonly]::placeholder {
+  color: var(--text-secondary) !important;
 }
 
 .seccion-plegable {

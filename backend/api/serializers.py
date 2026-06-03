@@ -1,3 +1,6 @@
+import re
+
+from django.utils import timezone
 from rest_framework import serializers
 from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido, Liquidacion, MiembroGrupo
 
@@ -64,6 +67,20 @@ class PartidoClasicoSerializer(serializers.ModelSerializer):
             ids = [jugador.id for jugador in jugadores]
             if len(set(ids)) != len(ids):
                 raise serializers.ValidationError('No se puede repetir jugador en un partido clásico.')
+
+        resultado = attrs.get('resultado', getattr(self.instance, 'resultado', ''))
+        match = re.match(r'^\s*(\d+)\s*[-:]\s*(\d+)\s*$', str(resultado or ''))
+        if not match:
+            raise serializers.ValidationError({'resultado': ['El resultado debe tener formato X-Y, por ejemplo 6-2.']})
+
+        puntos_a = int(match.group(1))
+        puntos_b = int(match.group(2))
+
+        if puntos_a < 0 or puntos_b < 0:
+            raise serializers.ValidationError({'resultado': ['El resultado no puede tener valores negativos.']})
+
+        if puntos_a == puntos_b:
+            raise serializers.ValidationError({'resultado': ['El partido clásico no puede terminar en empate.']})
 
         return attrs
 
@@ -151,6 +168,28 @@ class SesionSerializer(serializers.ModelSerializer):
     partidos_clasicos = PartidoClasicoSerializer(source='partidoclasico_set', many=True, read_only=True)
     mini_partidos = MiniPartidoSerializer(source='minipartido_set', many=True, read_only=True)
 
+    def validate(self, attrs):
+        fecha_hora = attrs.get('fecha_hora', getattr(self.instance, 'fecha_hora', None))
+        coste_total = attrs.get('coste_total', getattr(self.instance, 'coste_total', None))
+
+        if fecha_hora and fecha_hora < timezone.now():
+            raise serializers.ValidationError({'fecha_hora': ['La fecha de la sesión no puede ser anterior al momento actual.']})
+
+        if coste_total is not None and coste_total < 0:
+            raise serializers.ValidationError({'coste_total': ['El coste total no puede ser negativo.']})
+
+        if attrs.get('estado') == 'EN_CURSO':
+            sesion = self.instance
+            confirmados = 0
+
+            if sesion:
+                confirmados = sesion.asistentesesion_set.filter(estado_asistencia='CONFIRMADO').count()
+
+            if confirmados < 4:
+                raise serializers.ValidationError({'estado': ['Se necesitan al menos 4 jugadores confirmados para iniciar la sesión.']})
+
+        return attrs
+
     class Meta:
         model = Sesion
         # Añadimos los nuevos campos anidados al array de fields
@@ -166,9 +205,13 @@ class LiquidacionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         pagador = attrs.get('pagador', getattr(self.instance, 'pagador', None))
         receptor = attrs.get('receptor', getattr(self.instance, 'receptor', None))
+        cantidad = attrs.get('cantidad', getattr(self.instance, 'cantidad', None))
 
         if pagador and receptor and pagador.id == receptor.id:
             raise serializers.ValidationError('El pagador y el receptor deben ser distintos.')
+
+        if cantidad is not None and cantidad <= 0:
+            raise serializers.ValidationError({'cantidad': ['La cantidad debe ser mayor que 0.']})
 
         return attrs
 

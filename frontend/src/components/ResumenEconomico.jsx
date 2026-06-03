@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 
-const ResumenEconomico = ({ sesion, recargarSesion, esAdminGrupo }) => {
+const ResumenEconomico = ({ sesion, recargarSesion, esAdminGrupo, puedeGestionarPagador }) => {
   const confirmados = sesion.asistentes?.filter(a => a.estado_asistencia === 'CONFIRMADO') || [];
   const numJugadores = confirmados.length;
   const pagoSesion = sesion.pagos?.[0] || null;
@@ -96,7 +96,7 @@ const ResumenEconomico = ({ sesion, recargarSesion, esAdminGrupo }) => {
             <button type="submit" className="btn btn-dark fw-bold" disabled={guardando || (Boolean(pagoSesion) && !edicionPagadorHabilitada)}>
               {guardando ? 'Guardando...' : 'Guardar pagador'}
             </button>
-            {pagoSesion && esAdminGrupo && (
+            {pagoSesion && puedeGestionarPagador && (
               <button
                 type="button"
                 className="btn btn-outline-secondary"
@@ -126,9 +126,9 @@ const ResumenEconomico = ({ sesion, recargarSesion, esAdminGrupo }) => {
 
           {pagoSesion && !edicionPagadorHabilitada && (
             <p className="small text-muted mb-0 mt-2">
-              {esAdminGrupo
+              {puedeGestionarPagador
                 ? 'Pagador bloqueado. Si necesitas corregirlo, usa "Desbloquear".'
-                : 'Pagador bloqueado por un administrador del grupo.'}
+                : 'Pagador bloqueado por el creador de la sesión o un administrador del grupo.'}
             </p>
           )}
         </form>

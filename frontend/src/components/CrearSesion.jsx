@@ -11,6 +11,13 @@ const CrearSesion = () => {
     coste_total: '' 
   });
 
+  const obtenerMinimoFechaHora = () => {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    const local = new Date(ahora.getTime() - offset * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -25,7 +32,13 @@ const CrearSesion = () => {
       navigate(`/grupos/${id}`); 
     } catch (error) {
       console.error("Error al crear sesión:", error);
-      alert("No se pudo crear la sesión. Revisa los datos.");
+      const detalle = error.response?.data;
+      const mensaje =
+        (Array.isArray(detalle?.fecha_hora) ? detalle.fecha_hora[0] : null) ||
+        (Array.isArray(detalle?.coste_total) ? detalle.coste_total[0] : null) ||
+        detalle?.detail ||
+        'No se pudo crear la sesión. Revisa los datos.';
+      alert(mensaje);
     }
   };
 
@@ -62,21 +75,23 @@ const CrearSesion = () => {
           </div>
           <div className="mb-3">
             <label className="form-label fw-bold small text-muted">FECHA Y HORA</label>
-            <input 
-              type="datetime-local" 
-              className="form-control" 
-              onChange={e => setDatos({...datos, fecha_hora: e.target.value})} 
-              required 
-            />
+              <input 
+                type="datetime-local" 
+                className="form-control" 
+                min={obtenerMinimoFechaHora()}
+                onChange={e => setDatos({...datos, fecha_hora: e.target.value})} 
+                required 
+              />
           </div>
           <div className="mb-4">
             <label className="form-label fw-bold small text-muted">COSTE TOTAL DE LA PISTA (€)</label>
-            <input 
-              type="number" 
-              step="0.01" 
-              className="form-control" 
-              placeholder="Ej: 20.00"
-              onChange={e => setDatos({...datos, coste_total: e.target.value})} 
+              <input 
+                type="number" 
+                step="0.01" 
+                min="0"
+                className="form-control" 
+                placeholder="Ej: 20.00"
+                onChange={e => setDatos({...datos, coste_total: e.target.value})} 
               required 
             />
           </div>

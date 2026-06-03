@@ -107,7 +107,7 @@ const MisGrupos = () => {
                     Creado el: {new Date(grupo.fecha_creacion).toLocaleDateString()}
                   </p>
                   <Link to={`/grupos/${grupo.id}`} className="btn btn-outline-success mt-auto">
-                    Ver Sesiones
+                    Ver Grupo
                   </Link>
                 </div>
               </div>

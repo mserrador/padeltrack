@@ -19,6 +19,7 @@ const DetalleGrupo = () => {
   const [mostrarConfirmacionBorrado, setMostrarConfirmacionBorrado] = useState(false);
   const [textoConfirmacionBorrado, setTextoConfirmacionBorrado] = useState('');
   const [eliminandoGrupo, setEliminandoGrupo] = useState(false);
+  const [paginaSesiones, setPaginaSesiones] = useState(1);
   const [seccionesAbiertas, setSeccionesAbiertas] = useState({
     historial: true,
     miembros: false,
@@ -50,6 +51,10 @@ const DetalleGrupo = () => {
   }, [claveSecciones, seccionesAbiertas]);
 
   useEffect(() => {
+    setPaginaSesiones(1);
+  }, [sesiones.length]);
+
+  useEffect(() => {
     const fetchDatos = async () => {
       try {
         // Ejecutamos ambas peticiones a la vez para reducir el tiempo de espera
@@ -68,7 +73,14 @@ const DetalleGrupo = () => {
           : Array.isArray(resSesiones.data?.results)
             ? resSesiones.data.results
             : [];
-        const sesionesFiltradas = sesionesData.filter(s => s.grupo === parseInt(id, 10));
+        const sesionesFiltradas = sesionesData
+          .filter((s) => s.grupo === parseInt(id, 10))
+          .sort((a, b) => {
+            if (!a.fecha_hora && !b.fecha_hora) return b.id - a.id;
+            if (!a.fecha_hora) return 1;
+            if (!b.fecha_hora) return -1;
+            return new Date(b.fecha_hora) - new Date(a.fecha_hora);
+          });
         setSesiones(sesionesFiltradas);
 
         const miembrosData = Array.isArray(resMiembros.data) ? resMiembros.data : [];
@@ -239,6 +251,12 @@ const DetalleGrupo = () => {
     }
   };
 
+  const elementosPorPaginaSesiones = 5;
+  const totalPaginasSesiones = Math.max(1, Math.ceil(sesiones.length / elementosPorPaginaSesiones));
+  const paginaActualSesiones = Math.min(paginaSesiones, totalPaginasSesiones);
+  const inicioSesiones = (paginaActualSesiones - 1) * elementosPorPaginaSesiones;
+  const sesionesPaginadas = sesiones.slice(inicioSesiones, inicioSesiones + elementosPorPaginaSesiones);
+
   return (
     <div>
       {/* Cabecera del Grupo */}
@@ -267,28 +285,56 @@ const DetalleGrupo = () => {
             <p className="text-muted mb-0">No hay sesiones organizadas aún. ¡Crea la primera!</p>
           </div>
         ) : (
-          <div className="list-group shadow-sm">
-            {sesiones.map((sesion) => (
-              <Link 
-                to={`/sesiones/${sesion.id}`} 
-                key={sesion.id} 
-                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
-              >
-                <div>
-                  <h6 className="mb-1 fw-bold">{sesion.lugar}</h6>
-                  <small className="text-muted">
-                    {sesion.fecha_hora ? new Date(sesion.fecha_hora).toLocaleDateString() : 'Fecha por definir'}
-                  </small>
+          <>
+            <div className="list-group shadow-sm">
+              {sesionesPaginadas.map((sesion) => (
+                <Link 
+                  to={`/sesiones/${sesion.id}`} 
+                  key={sesion.id} 
+                  className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
+                >
+                  <div>
+                    <h6 className="mb-1 fw-bold">{sesion.lugar}</h6>
+                    <small className="text-muted">
+                      {sesion.fecha_hora ? new Date(sesion.fecha_hora).toLocaleDateString() : 'Fecha por definir'}
+                    </small>
+                  </div>
+                  <span className={`badge rounded-pill ${
+                    sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : 
+                    sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'
+                  }`}>
+                    {sesion.estado.replace('_', ' ')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {totalPaginasSesiones > 1 && (
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <small className="text-muted">
+                  Página {paginaActualSesiones} de {totalPaginasSesiones}
+                </small>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={paginaActualSesiones === 1}
+                    onClick={() => setPaginaSesiones((previo) => Math.max(previo - 1, 1))}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={paginaActualSesiones === totalPaginasSesiones}
+                    onClick={() => setPaginaSesiones((previo) => Math.min(previo + 1, totalPaginasSesiones))}
+                  >
+                    Siguiente
+                  </button>
                 </div>
-                <span className={`badge rounded-pill ${
-                  sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : 
-                  sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'
-                }`}>
-                  {sesion.estado.replace('_', ' ')}
-                </span>
-              </Link>
-            ))}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </SeccionPlegable>
 
@@ -418,7 +464,7 @@ const DetalleGrupo = () => {
       </SeccionPlegable>
 
       <SeccionPlegable idSeccion="balance" titulo="Balance global" abierta={seccionesAbiertas.balance} onToggle={toggleSeccion}>
-        <BalanceGlobal grupoId={id} />
+        <BalanceGlobal grupoId={id} esAdmin={esAdmin} />
       </SeccionPlegable>
 
       {esAdmin && (

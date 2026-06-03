@@ -97,6 +97,12 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
       recargarSesion();
     } catch (error) {
       console.error("Error al guardar:", error);
+      const detalle = error.response?.data;
+      const mensaje =
+        detalle?.detail ||
+        (Array.isArray(detalle?.non_field_errors) ? detalle.non_field_errors[0] : null) ||
+        'No se pudo guardar el mini partido.';
+      alert(mensaje);
     } finally {
       setGuardando(false);
     }
