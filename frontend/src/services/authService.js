@@ -37,6 +37,11 @@ export const verificarCorreo = async ({ uid, token }) => {
   return respuesta.data;
 };
 
+export const reenviarVerificacion = async ({ email }) => {
+  const respuesta = await api.post('reenviar-verificacion/', { email });
+  return respuesta.data;
+};
+
 export const cerrarSesion = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh');

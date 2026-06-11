@@ -213,6 +213,10 @@ def validar_marcador_en_sesion(usuario, sesion):
 
 
 class SerializadorTokenPadelTrack(TokenObtainPairSerializer):
+    default_error_messages = {
+        'no_active_account': 'Usuario o contraseña incorrectos.',
+    }
+
     def validate(self, attrs):
         data = super().validate(attrs)
 
@@ -276,6 +280,30 @@ class VerificarEmailView(APIView):
         usuario.email_verificado = True
         usuario.save(update_fields=['email_verificado'])
         return Response({'detail': 'Correo verificado correctamente.'}, status=status.HTTP_200_OK)
+
+
+class ReenviarVerificacionView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = (request.data.get('email') or '').strip().lower()
+        if not email:
+            raise ValidationError({'email': ['Debes indicar un correo válido.']})
+
+        usuario = Usuario.objects.filter(email__iexact=email).first()
+        if not usuario:
+            raise ValidationError({'email': ['No existe ninguna cuenta registrada con ese correo.']})
+
+        if usuario.email_verificado:
+            return Response({'detail': 'Esta cuenta ya tiene el correo verificado.'}, status=status.HTTP_200_OK)
+
+        try:
+            enviar_correo_verificacion(usuario)
+        except Exception:
+            registro_eventos.exception('No se pudo reenviar el correo de verificación para %s', email)
+            raise ValidationError({'detail': 'No se pudo reenviar el correo de verificación. Inténtalo de nuevo más tarde.'})
+
+        return Response({'detail': 'Te hemos reenviado el correo de verificación.'}, status=status.HTTP_200_OK)
 
 # Vista para Usuarios
 class UsuarioViewSet(viewsets.ModelViewSet):

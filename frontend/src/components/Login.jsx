@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { obtenerUsuarioActual, iniciarSesion } from '../services/authService';
+import { obtenerUsuarioActual, iniciarSesion, reenviarVerificacion } from '../services/authService';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [emailReenvio, setEmailReenvio] = useState('');
+  const [reenviando, setReenviando] = useState(false);
   const navigate = useNavigate();
   const [parametrosBusqueda] = useSearchParams();
   const registroOk = parametrosBusqueda.get('registro') === 'ok';
@@ -16,6 +18,12 @@ const Login = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (correoRegistro) {
+      setEmailReenvio(correoRegistro);
+    }
+  }, [correoRegistro]);
+
   const manejarEnvio = async (e) => {
     e.preventDefault();
     try {
@@ -26,6 +34,29 @@ const Login = () => {
       const detalle = error.response?.data;
       const mensaje = detalle?.detail || 'Usuario o contraseña incorrectos';
       alert(mensaje);
+    }
+  };
+
+  const manejarReenvio = async (e) => {
+    e.preventDefault();
+    if (!emailReenvio.trim()) {
+      alert('Indica el correo de tu cuenta para reenviar la verificación.');
+      return;
+    }
+
+    setReenviando(true);
+    try {
+      const respuesta = await reenviarVerificacion({ email: emailReenvio.trim() });
+      alert(respuesta.detail || 'Te hemos reenviado el correo de verificación.');
+    } catch (error) {
+      const detalle = error.response?.data;
+      const mensaje =
+        (Array.isArray(detalle?.email) ? detalle.email[0] : null) ||
+        detalle?.detail ||
+        'No se pudo reenviar el correo de verificación.';
+      alert(mensaje);
+    } finally {
+      setReenviando(false);
     }
   };
 
@@ -52,6 +83,27 @@ const Login = () => {
               </div>
               <button type="submit" className="btn btn-success w-100">Iniciar Sesión</button>
             </form>
+            <hr className="my-4" />
+            <div>
+              <p className="text-center text-muted small mb-3">
+                Si ya te registraste pero no encuentras el correo, puedes pedir otro enlace de verificación.
+              </p>
+              <form onSubmit={manejarReenvio}>
+                <div className="mb-3">
+                  <label className="form-label">Correo de tu cuenta</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={emailReenvio}
+                    onChange={(e) => setEmailReenvio(e.target.value)}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-outline-success w-100" disabled={reenviando}>
+                  {reenviando ? 'Reenviando...' : 'Reenviar correo de verificación'}
+                </button>
+              </form>
+            </div>
             <p className="text-center small mt-3 mb-0">
               ¿Nuevo por aquí? <Link to="/registro">Crear cuenta</Link>
             </p>
