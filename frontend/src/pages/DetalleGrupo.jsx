@@ -55,7 +55,7 @@ const DetalleGrupo = () => {
   }, [sesiones.length]);
 
   useEffect(() => {
-    const fetchDatos = async () => {
+    const cargarDatos = async () => {
       try {
         // Ejecutamos ambas peticiones a la vez para reducir el tiempo de espera
         const [resGrupo, resSesiones, resMiembros, resEstadisticas] = await Promise.all([
@@ -99,7 +99,7 @@ const DetalleGrupo = () => {
       }
     };
 
-    fetchDatos();
+    cargarDatos();
   }, [id]);
 
   if (cargando) {
@@ -173,7 +173,7 @@ const DetalleGrupo = () => {
     }
   };
 
-  const toggleSeccion = (idSeccion) => {
+  const alternarSeccion = (idSeccion) => {
     setSeccionesAbiertas((previo) => {
       const siguiente = { ...previo, [idSeccion]: !previo[idSeccion] };
       if (idSeccion === 'peligro' && !siguiente.peligro) {
@@ -279,7 +279,7 @@ const DetalleGrupo = () => {
         <button type="button" className="btn btn-outline-secondary btn-sm" onClick={contraerTodo}>Contraer todo</button>
       </div>
 
-      <SeccionPlegable idSeccion="historial" titulo="Historial de Sesiones" abierta={seccionesAbiertas.historial} onToggle={toggleSeccion}>
+      <SeccionPlegable idSeccion="historial" titulo="Historial de Sesiones" abierta={seccionesAbiertas.historial} onToggle={alternarSeccion}>
         {sesiones.length === 0 ? (
           <div className="text-center">
             <p className="text-muted mb-0">No hay sesiones organizadas aún. ¡Crea la primera!</p>
@@ -338,7 +338,7 @@ const DetalleGrupo = () => {
         )}
       </SeccionPlegable>
 
-      <SeccionPlegable idSeccion="estadisticas" titulo="Estadísticas globales del grupo" abierta={seccionesAbiertas.estadisticas} onToggle={toggleSeccion}>
+      <SeccionPlegable idSeccion="estadisticas" titulo="Estadísticas globales del grupo" abierta={seccionesAbiertas.estadisticas} onToggle={alternarSeccion}>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <small className="text-muted">
             {estadisticasGrupo?.resumen?.sesiones_finalizadas ?? 0} sesiones finalizadas · {estadisticasGrupo?.resumen?.partidos_contabilizados ?? 0} partidos
@@ -412,7 +412,7 @@ const DetalleGrupo = () => {
         </div>
       </SeccionPlegable>
 
-      <SeccionPlegable idSeccion="miembros" titulo="Miembros del grupo" abierta={seccionesAbiertas.miembros} onToggle={toggleSeccion}>
+      <SeccionPlegable idSeccion="miembros" titulo="Miembros del grupo" abierta={seccionesAbiertas.miembros} onToggle={alternarSeccion}>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <span className="badge bg-secondary">{miembros.length} miembros</span>
         </div>
@@ -463,12 +463,12 @@ const DetalleGrupo = () => {
         )}
       </SeccionPlegable>
 
-      <SeccionPlegable idSeccion="balance" titulo="Balance global" abierta={seccionesAbiertas.balance} onToggle={toggleSeccion}>
+      <SeccionPlegable idSeccion="balance" titulo="Balance global" abierta={seccionesAbiertas.balance} onToggle={alternarSeccion}>
         <BalanceGlobal grupoId={id} esAdmin={esAdmin} />
       </SeccionPlegable>
 
       {esAdmin && (
-        <SeccionPlegable idSeccion="peligro" titulo="Zona de peligro" abierta={seccionesAbiertas.peligro} onToggle={toggleSeccion}>
+        <SeccionPlegable idSeccion="peligro" titulo="Zona de peligro" abierta={seccionesAbiertas.peligro} onToggle={alternarSeccion}>
           <h5 className="fw-bold text-danger mb-2">Zona de peligro</h5>
           <p className="text-muted mb-3">
             Si eliminas este grupo, se borrarán también sus sesiones, asistencias, partidos, pagos y liquidaciones.
@@ -514,7 +514,7 @@ const DetalleGrupo = () => {
         </SeccionPlegable>
       )}
 
-      <SeccionPlegable idSeccion="salida" titulo="Salir del grupo" abierta={seccionesAbiertas.salida} onToggle={toggleSeccion}>
+      <SeccionPlegable idSeccion="salida" titulo="Salir del grupo" abierta={seccionesAbiertas.salida} onToggle={alternarSeccion}>
         <p className="text-muted mb-3">
           Puedes salir voluntariamente del grupo. Tus datos de usuario no se eliminan.
         </p>

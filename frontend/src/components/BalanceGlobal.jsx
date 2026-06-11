@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import { getUsuarioIdActual } from '../services/authService';
+import { obtenerUsuarioIdActual } from '../services/authService';
 
 const BalanceGlobal = ({ grupoId, esAdmin }) => {
   const [balances, setBalances] = useState([]);
@@ -13,7 +13,7 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
   const [cantidad, setCantidad] = useState('');
   const [guardando, setGuardando] = useState(false);
   const cabeceraBalanceRef = useRef(null);
-  const miUsuarioId = getUsuarioIdActual();
+  const miUsuarioId = obtenerUsuarioIdActual();
   const seleccionDuplicada = Boolean(pagador) && Boolean(receptor) && String(pagador) === String(receptor);
   const pagoGuiadoSeleccionado = Boolean(pagador) && Boolean(receptor) && Boolean(cantidad);
 
@@ -58,7 +58,7 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
     return transacciones;
   };
 
-  const fetchData = async () => {
+  const cargarDatos = async () => {
     try {
       const [resBalances, resHistorial] = await Promise.all([
         api.get(`grupos/${grupoId}/balance/`),
@@ -77,14 +77,14 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
   };
 
   useEffect(() => {
-    fetchData();
+    cargarDatos();
   }, [grupoId]);
 
   useEffect(() => {
     setPaginaHistorial(1);
   }, [historial.length]);
 
-  const handleRegistrarBizum = async (e) => {
+  const manejarRegistroBizum = async (e) => {
     e.preventDefault();
     if (!esAdmin && !pagoGuiadoSeleccionado) {
       return alert('Selecciona primero uno de los pagos sugeridos.');
@@ -104,7 +104,7 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
       });
       
       setPagador(''); setReceptor(''); setCantidad('');
-      fetchData(); 
+      cargarDatos(); 
       alert("¡Transferencia registrada con éxito!");
     } catch (error) {
       console.error("Error:", error);
@@ -173,7 +173,7 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
           <div className="col-12 col-md-5">
             <h6 className="fw-bold text-secondary mb-3">Registrar Transferencia</h6>
             <div className="card bg-light border-0 p-3 shadow-sm balance-transfer-form">
-              <form onSubmit={handleRegistrarBizum}>
+              <form onSubmit={manejarRegistroBizum}>
                 <div className="mb-2">
                   <label className="form-label small fw-bold text-muted">¿Quién envía?</label>
                   <select className="form-select form-select-sm" value={pagador} onChange={(e) => setPagador(e.target.value)} required disabled={!esAdmin}>

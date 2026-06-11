@@ -1,7 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UsuarioViewSet, GrupoViewSet, SesionViewSet, AsistenteSesionViewSet, PagoViewSet, PartidoClasicoViewSet, MiniPartidoViewSet, LiquidacionViewSet, RegistroUsuarioView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from .views import UsuarioViewSet, GrupoViewSet, SesionViewSet, AsistenteSesionViewSet, PagoViewSet, PartidoClasicoViewSet, MiniPartidoViewSet, LiquidacionViewSet, RegistroUsuarioView, VerificarEmailView, VistaTokenPadelTrack
 
  
 router = DefaultRouter()
@@ -16,7 +17,8 @@ router.register(r'liquidaciones', LiquidacionViewSet, basename='liquidacion')
 
 urlpatterns = [
     path('registro/', RegistroUsuarioView.as_view(), name='registro_usuario'),
+    path('verificar-email/', VerificarEmailView.as_view(), name='verificar_email'),
     path('', include(router.urls)),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/', VistaTokenPadelTrack.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

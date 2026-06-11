@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { getUsuarioActual } from '../services/authService';
+import { obtenerUsuarioActual } from '../services/authService';
 
 const Landing = () => {
-  const haySesion = Boolean(localStorage.getItem('token') && getUsuarioActual());
+  const haySesion = Boolean(localStorage.getItem('token') && obtenerUsuarioActual());
 
   return (
     <section className="landing-hero py-5">

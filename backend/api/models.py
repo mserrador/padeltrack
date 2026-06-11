@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 # 0. EL USUARIO 
 # ==========================================
 class Usuario(AbstractUser):
-    pass
+    email_verificado = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username

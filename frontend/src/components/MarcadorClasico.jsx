@@ -17,7 +17,7 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
   const enPista = [j1A, j2A, j1B, j2B].filter(Boolean).map(String);
   const hayDuplicados = new Set(enPista).size !== enPista.length;
 
-  const handleGuardarPartido = async (e) => {
+  const manejarGuardadoPartido = async (e) => {
     e.preventDefault();
     if (!j1A || !j2A || !j1B || !j2B || juegosA === '' || juegosB === '') return alert("Completa todos los campos");
 
@@ -89,7 +89,7 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
         <h4 className="mb-0 fw-bold">Partido Clásico</h4>
       </div>
       <div className="card-body">
-        <form onSubmit={handleGuardarPartido}>
+        <form onSubmit={manejarGuardadoPartido}>
           <div className="row text-center mb-3">
             <div className="col-5">
               <h6 className="fw-bold text-primary">Pareja A</h6>

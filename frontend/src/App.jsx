@@ -10,27 +10,28 @@ import DetalleSesion from './pages/DetalleSesion';
 import Login from './components/Login'
 import CrearSesion from './components/CrearSesion'
 import Registro from './pages/Registro';
+import VerificarEmail from './pages/VerificarEmail';
 
-const THEME_STORAGE_KEY = 'padeltrack-theme';
+const CLAVE_ALMACENAMIENTO_TEMA = 'padeltrack-theme';
 
 function App() {
-  const [theme, setTheme] = useState(() => {
-    const guardado = localStorage.getItem(THEME_STORAGE_KEY);
+  const [tema, setTema] = useState(() => {
+    const guardado = localStorage.getItem(CLAVE_ALMACENAMIENTO_TEMA);
     return guardado === 'light' ? 'light' : 'dark';
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', tema);
+    localStorage.setItem(CLAVE_ALMACENAMIENTO_TEMA, tema);
+  }, [tema]);
 
   const cambiarTema = () => {
-    setTheme((anterior) => (anterior === 'dark' ? 'light' : 'dark'));
+    setTema((anterior) => (anterior === 'dark' ? 'light' : 'dark'));
   };
 
   return (
     <div className="app-shell min-vh-100">
-      <Navbar theme={theme} cambiarTema={cambiarTema} />
+      <Navbar tema={tema} cambiarTema={cambiarTema} />
       <main className="container py-4 app-main fade-in">
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -40,6 +41,7 @@ function App() {
           <Route path="/sesiones/:id" element={<RutaProtegida><DetalleSesion /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
+          <Route path="/verificar-email" element={<VerificarEmail />} />
           <Route path="/grupos/:id/nueva-sesion" element={<RutaProtegida><CrearSesion /></RutaProtegida>} />
           <Route path="/grupo/:id/nueva-sesion" element={<RutaProtegida><CrearSesion /></RutaProtegida>} />
           <Route path="*" element={<NoEncontrado />} />

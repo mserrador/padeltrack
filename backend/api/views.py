@@ -1,15 +1,28 @@
-from django.db import transaction
-from django.shortcuts import get_object_or_404
+import logging
 import re
+
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.db import transaction
+from django.db.models import Sum
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Sum
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido, MiembroGrupo, Liquidacion
 from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, AsistenteSesionSerializer, PagoSerializer, PartidoClasicoSerializer, MiniPartidoSerializer, LiquidacionSerializer, RegistroUsuarioSerializer, MiembroGrupoSerializer
+
+
+registro_eventos = logging.getLogger(__name__)
 
 
 def usuario_es_miembro_de_grupo(usuario, grupo):
@@ -32,6 +45,59 @@ def validar_admin_en_grupo(usuario, grupo):
 
 def ids_miembros_grupo(grupo):
     return set(MiembroGrupo.objects.filter(grupo=grupo).values_list('usuario_id', flat=True))
+
+
+def construir_enlace_frontend(ruta):
+    url_base = settings.FRONTEND_URL.rstrip('/')
+    return f'{url_base}{ruta}'
+
+
+def enviar_correo_verificacion(usuario):
+    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+    token = default_token_generator.make_token(usuario)
+    enlace = construir_enlace_frontend(f'/verificar-email?uid={uid}&token={token}')
+
+    send_mail(
+        subject='Verifica tu correo en PadelTrack',
+        message=(
+            f'Hola {usuario.username},\n\n'
+            'Gracias por registrarte en PadelTrack.\n'
+            'Antes de iniciar sesión, verifica tu correo desde este enlace:\n\n'
+            f'{enlace}\n\n'
+            'Si no has creado esta cuenta, puedes ignorar este mensaje.'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[usuario.email],
+        fail_silently=False,
+    )
+
+
+def enviar_correo_nueva_sesion(sesion):
+    miembros = Usuario.objects.filter(
+        miembrogrupo__grupo=sesion.grupo,
+        email_verificado=True,
+    ).exclude(id=sesion.creado_por_id).exclude(email='').distinct()
+
+    destinatarios = [usuario.email for usuario in miembros if usuario.email]
+    if not destinatarios:
+        return
+
+    fecha = sesion.fecha_hora.strftime('%d/%m/%Y %H:%M') if sesion.fecha_hora else 'Por definir'
+    enlace = construir_enlace_frontend(f'/sesiones/{sesion.id}')
+
+    send_mail(
+        subject=f'Nueva sesión en {sesion.grupo.nombre}',
+        message=(
+            f'Se ha creado una nueva sesión en el grupo {sesion.grupo.nombre}.\n\n'
+            f'Lugar: {sesion.lugar}\n'
+            f'Fecha y hora: {fecha}\n'
+            f'Coste total: {sesion.coste_total}€\n\n'
+            f'Puedes verla aquí:\n{enlace}'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=destinatarios,
+        fail_silently=False,
+    )
 
 
 def calcular_balances_grupo(grupo):
@@ -146,22 +212,70 @@ def validar_marcador_en_sesion(usuario, sesion):
         raise PermissionDenied('Solo los jugadores confirmados de esta sesión pueden registrar resultados.')
 
 
+class SerializadorTokenPadelTrack(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        if not self.user.email_verificado:
+            raise ValidationError({'detail': 'Debes verificar tu correo antes de iniciar sesión.'})
+
+        return data
+
+
+class VistaTokenPadelTrack(TokenObtainPairView):
+    serializer_class = SerializadorTokenPadelTrack
+
+
 class RegistroUsuarioView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegistroUsuarioSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        usuario = serializer.save()
+        try:
+            with transaction.atomic():
+                usuario = serializer.save()
+                enviar_correo_verificacion(usuario)
+        except Exception:
+            registro_eventos.exception('No se pudo enviar el correo de verificación para el usuario %s', request.data.get('username'))
+            raise ValidationError({'detail': 'No se pudo enviar el correo de verificación. Inténtalo de nuevo más tarde.'})
+
         return Response(
             {
                 'id': usuario.id,
                 'username': usuario.username,
                 'email': usuario.email,
-                'mensaje': 'Usuario creado correctamente.',
+                'mensaje': 'Usuario creado correctamente. Revisa tu correo para verificar la cuenta antes de iniciar sesión.',
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class VerificarEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+
+        if not uid or not token:
+            raise ValidationError({'detail': 'El enlace de verificación no es válido.'})
+
+        try:
+            usuario_id = force_str(urlsafe_base64_decode(uid))
+            usuario = Usuario.objects.get(pk=usuario_id)
+        except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+            raise ValidationError({'detail': 'El enlace de verificación no es válido o ha caducado.'})
+
+        if usuario.email_verificado:
+            return Response({'detail': 'Tu correo ya estaba verificado.'}, status=status.HTTP_200_OK)
+
+        if not default_token_generator.check_token(usuario, token):
+            raise ValidationError({'detail': 'El enlace de verificación no es válido o ha caducado.'})
+
+        usuario.email_verificado = True
+        usuario.save(update_fields=['email_verificado'])
+        return Response({'detail': 'Correo verificado correctamente.'}, status=status.HTTP_200_OK)
 
 # Vista para Usuarios
 class UsuarioViewSet(viewsets.ModelViewSet):
@@ -430,6 +544,11 @@ class SesionViewSet(viewsets.ModelViewSet):
             usuario=self.request.user,
             estado_asistencia='CONFIRMADO'
         )
+
+        try:
+            enviar_correo_nueva_sesion(sesion)
+        except Exception:
+            registro_eventos.exception('No se pudieron enviar los correos de nueva sesión para la sesión %s', sesion.id)
 
     def perform_update(self, serializer):
         sesion = self.get_object()

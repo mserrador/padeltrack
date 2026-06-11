@@ -8,7 +8,7 @@ from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasic
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'email_verificado']
 
 # Serializer para los Grupos
 class GrupoSerializer(serializers.ModelSerializer):

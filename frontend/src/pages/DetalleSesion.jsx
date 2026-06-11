@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
-import { getUsuarioActual, getUsuarioIdActual } from '../services/authService';
+import { obtenerUsuarioActual, obtenerUsuarioIdActual } from '../services/authService';
 import MarcadorClasico from '../components/MarcadorClasico';
 import MarcadorMiniPartido from '../components/MarcadorMiniPartido';
 import ResumenEconomico from '../components/ResumenEconomico';
@@ -23,8 +23,8 @@ const DetalleSesion = () => {
     coste_total: '',
   });
 
-  const miUsuarioId = getUsuarioIdActual();
-  const miUsername = getUsuarioActual();
+  const miUsuarioId = obtenerUsuarioIdActual();
+  const miUsername = obtenerUsuarioActual();
 
   const fechaInputDesdeSesion = (valor) => {
     if (!valor) return '';
@@ -63,7 +63,7 @@ const DetalleSesion = () => {
     }
   };
 
-  const fetchSesion = async () => {
+  const cargarSesion = async () => {
     try {
       const respuesta = await api.get(`sesiones/${id}/`);
       const sesionData = respuesta.data;
@@ -82,10 +82,10 @@ const DetalleSesion = () => {
   };
 
   useEffect(() => {
-    fetchSesion();
+    cargarSesion();
   }, [id]);
 
-  const handleAsistencia = async (estado) => {
+  const manejarAsistencia = async (estado) => {
     try {
       const miUsuarioIdGuardado = miUsuarioId;
       const asistenciaExistente = sesion.asistentes.find((a) => a.usuario === miUsuarioIdGuardado || a.usuario_nombre === miUsername);
@@ -95,7 +95,7 @@ const DetalleSesion = () => {
       } else {
         await api.post('asistencias/', { sesion: id, estado_asistencia: estado });
       }
-      fetchSesion();
+      cargarSesion();
     } catch (error) {
       console.error("Error al registrar asistencia:", error);
       const detalle = error.response?.data;
@@ -111,7 +111,7 @@ const DetalleSesion = () => {
   const actualizarAsistenciaDeUsuario = async (asistenteId, estado) => {
     try {
       await api.patch(`asistencias/${asistenteId}/`, { estado_asistencia: estado });
-      await fetchSesion();
+      await cargarSesion();
     } catch (error) {
       const detalle = error.response?.data;
       alert(detalle?.detail || 'No se pudo actualizar la asistencia de este jugador.');
@@ -131,7 +131,7 @@ const DetalleSesion = () => {
         estado_asistencia: estadoInicial,
       });
       setUsuarioNuevoAsistente('');
-      await fetchSesion();
+      await cargarSesion();
     } catch (error) {
       const detalle = error.response?.data;
       const mensaje =
@@ -160,7 +160,7 @@ const DetalleSesion = () => {
     if(window.confirm(mensaje)) {
       try {
         await api.patch(`sesiones/${id}/`, { estado: nuevoEstado });
-        fetchSesion();
+        cargarSesion();
       } catch (error) {
         console.error("Error al cambiar estado:", error);
         const detalle = error.response?.data;
@@ -188,7 +188,7 @@ const DetalleSesion = () => {
         coste_total: datosEdicion.coste_total,
       });
       setMostrandoEdicion(false);
-      await fetchSesion();
+      await cargarSesion();
     } catch (error) {
       const detalle = error.response?.data;
       const mensaje =
@@ -258,8 +258,8 @@ const DetalleSesion = () => {
           <div className="card-body">
             <h5 className="fw-bold mb-3">Gestión de Asistencia</h5>
             <div className="d-flex gap-2 mb-4">
-              <button onClick={() => handleAsistencia('CONFIRMADO')} className="btn btn-outline-success w-100 fw-bold">Voy a ir</button>
-              <button onClick={() => handleAsistencia('DECLINADO')} className="btn btn-outline-danger w-100 fw-bold">No puedo</button>
+              <button onClick={() => manejarAsistencia('CONFIRMADO')} className="btn btn-outline-success w-100 fw-bold">Voy a ir</button>
+              <button onClick={() => manejarAsistencia('DECLINADO')} className="btn btn-outline-danger w-100 fw-bold">No puedo</button>
             </div>
 
             {puedeEditarSesion && (
@@ -385,9 +385,9 @@ const DetalleSesion = () => {
         <div className="mb-4">
           {/* Lógica Automática del Marcador */}
           {numConfirmados === 4 ? (
-            <MarcadorClasico asistentes={sesion.asistentes} sesionId={sesion.id} recargarSesion={fetchSesion} />
+            <MarcadorClasico asistentes={sesion.asistentes} sesionId={sesion.id} recargarSesion={cargarSesion} />
           ) : numConfirmados > 4 ? (
-            <MarcadorMiniPartido asistentes={sesion.asistentes} sesion={sesion} recargarSesion={fetchSesion} />
+            <MarcadorMiniPartido asistentes={sesion.asistentes} sesion={sesion} recargarSesion={cargarSesion} />
           ) : (
             <div className="alert alert-danger text-center fw-bold shadow-sm">
               No hay suficientes jugadores. Se necesitan al menos 4 confirmados para jugar.
@@ -405,7 +405,7 @@ const DetalleSesion = () => {
       {/* ESTADO: FINALIZADA */}
       {sesion.estado === 'FINALIZADA' && (
         <>
-          <ResumenEconomico sesion={sesion} recargarSesion={fetchSesion} esAdminGrupo={esAdminGrupo} puedeGestionarPagador={puedeEditarSesion} />
+          <ResumenEconomico sesion={sesion} recargarSesion={cargarSesion} esAdminGrupo={esAdminGrupo} puedeGestionarPagador={puedeEditarSesion} />
           <ResultadosSesion sesion={sesion} />
         </>
       )}

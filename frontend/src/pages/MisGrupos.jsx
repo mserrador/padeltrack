@@ -9,7 +9,7 @@ const MisGrupos = () => {
   const [nombreGrupo, setNombreGrupo] = useState('');
   const [guardandoGrupo, setGuardandoGrupo] = useState(false);
 
-  const fetchGrupos = async () => {
+  const cargarGrupos = async () => {
     try {
       const respuesta = await api.get('grupos/');
       const data = respuesta.data;
@@ -30,7 +30,7 @@ const MisGrupos = () => {
   };
 
   useEffect(() => {
-    fetchGrupos();
+    cargarGrupos();
   }, []);
 
   const crearGrupo = async (e) => {
@@ -47,7 +47,7 @@ const MisGrupos = () => {
       await api.post('grupos/', { nombre: nombreLimpio });
       setNombreGrupo('');
       setMostrarFormulario(false);
-      await fetchGrupos();
+      await cargarGrupos();
     } catch (error) {
       const detalle = error.response?.data;
       const mensaje = Array.isArray(detalle?.nombre)

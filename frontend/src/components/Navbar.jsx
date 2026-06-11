@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getUsuarioActual, logout } from '../services/authService';
+import { obtenerUsuarioActual, cerrarSesion } from '../services/authService';
 
-const Navbar = ({ theme, cambiarTema }) => {
+const Navbar = ({ tema, cambiarTema }) => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const usuario = getUsuarioActual();
-  const estaEnZonaPrivada = location.pathname.startsWith('/app') || location.pathname.startsWith('/grupos/') || location.pathname.startsWith('/sesiones/') || location.pathname.includes('/nueva-sesion');
+  const ubicacion = useLocation();
+  const usuario = obtenerUsuarioActual();
+  const estaEnZonaPrivada = ubicacion.pathname.startsWith('/app') || ubicacion.pathname.startsWith('/grupos/') || ubicacion.pathname.startsWith('/sesiones/') || ubicacion.pathname.includes('/nueva-sesion');
 
-  const handleLogout = () => {
-    logout();
+  const manejarCierreSesion = () => {
+    cerrarSesion();
     navigate('/');
     window.location.reload();
   };
 
   return (
-    <nav className={`navbar app-navbar navbar-expand-lg shadow-sm ${theme === 'dark' ? 'navbar-dark' : 'navbar-light'}`}>
+    <nav className={`navbar app-navbar navbar-expand-lg shadow-sm ${tema === 'dark' ? 'navbar-dark' : 'navbar-light'}`}>
       <div className="container">
         <Link className="navbar-brand fw-bold brand-mark" to="/">
           <span>PadelTrack</span>
@@ -37,7 +37,7 @@ const Navbar = ({ theme, cambiarTema }) => {
                   <span className="nav-link pt-nav-link fw-bold">Hola, {usuario}</span>
                 </li>
                 <li className="nav-item">
-                  <button className="btn btn-link nav-link pt-nav-link" onClick={handleLogout}>Salir</button>
+                  <button className="btn btn-link nav-link pt-nav-link" onClick={manejarCierreSesion}>Salir</button>
                 </li>
               </>
             ) : (
@@ -60,10 +60,10 @@ const Navbar = ({ theme, cambiarTema }) => {
                 type="button"
                 className="btn theme-toggle theme-toggle-icon"
                 onClick={cambiarTema}
-                aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-                title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                aria-label={tema === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                title={tema === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
               >
-                {theme === 'dark' ? '☀️' : '🌙'}
+                {tema === 'dark' ? '☀️' : '🌙'}
               </button>
             </li>
           </ul>

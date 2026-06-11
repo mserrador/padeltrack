@@ -18,7 +18,7 @@ const CrearSesion = () => {
     return local.toISOString().slice(0, 16);
   };
 
-  const handleSubmit = async (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
     try {
       // Enviamos el grupo_id (id) en el POST
@@ -42,7 +42,7 @@ const CrearSesion = () => {
     }
   };
 
-  const handleBack = () => {
+  const volverAtras = () => {
     if (window.history.length > 1) {
       navigate(-1);
       return;
@@ -58,11 +58,11 @@ const CrearSesion = () => {
           <h3 className="fw-bold mb-0">Planificar Partido</h3>
           <button 
             className="btn-close" 
-            onClick={handleBack}
+            onClick={volverAtras}
           ></button>
         </div>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={manejarEnvio}>
           <div className="mb-3">
             <label className="form-label fw-bold small text-muted">¿DÓNDE SE JUEGA?</label>
             <input 
@@ -103,7 +103,7 @@ const CrearSesion = () => {
             <button 
               type="button" 
               className="btn btn-outline-secondary" 
-              onClick={handleBack}
+               onClick={volverAtras}
             >
               Cancelar
             </button>

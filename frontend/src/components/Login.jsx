@@ -1,26 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { getUsuarioActual, login } from '../services/authService';
-import { Link, useNavigate } from 'react-router-dom';
+import { obtenerUsuarioActual, iniciarSesion } from '../services/authService';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const [parametrosBusqueda] = useSearchParams();
+  const registroOk = parametrosBusqueda.get('registro') === 'ok';
+  const correoRegistro = parametrosBusqueda.get('email');
 
   useEffect(() => {
-    if (localStorage.getItem('token') && getUsuarioActual()) {
+    if (localStorage.getItem('token') && obtenerUsuarioActual()) {
       navigate('/app');
     }
   }, [navigate]);
 
-  const handleSubmit = async (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
     try {
-      await login(username, password);
+      await iniciarSesion(username, password);
       navigate('/app');
       window.location.reload(); 
     } catch (error) {
-      alert("Usuario o contraseña incorrectos");
+      const detalle = error.response?.data;
+      const mensaje = detalle?.detail || 'Usuario o contraseña incorrectos';
+      alert(mensaje);
     }
   };
 
@@ -31,7 +36,12 @@ const Login = () => {
           <div className="card shadow p-4 login-panel">
             <h2 className="text-center mb-2">Entrar a PadelTrack</h2>
             <p className="text-center text-muted small mb-4">Gestiona tus partidos y cuentas en un solo sitio.</p>
-            <form onSubmit={handleSubmit}>
+            {registroOk && (
+              <div className="alert alert-success small" role="alert">
+                Cuenta creada correctamente. Revisa {correoRegistro || 'tu correo'} y verifica la cuenta antes de iniciar sesión.
+              </div>
+            )}
+            <form onSubmit={manejarEnvio}>
               <div className="mb-3">
                 <label className="form-label">Usuario</label>
                 <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} required />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, registrarUsuario, getUsuarioActual } from '../services/authService';
+import { registrarUsuario, obtenerUsuarioActual } from '../services/authService';
 
 const Registro = () => {
   const [username, setUsername] = useState('');
@@ -11,12 +11,12 @@ const Registro = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem('token') && getUsuarioActual()) {
+    if (localStorage.getItem('token') && obtenerUsuarioActual()) {
       navigate('/app');
     }
   }, [navigate]);
 
-  const handleSubmit = async (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
 
     if (password !== confirmarPassword) {
@@ -24,12 +24,10 @@ const Registro = () => {
       return;
     }
 
-    setGuardando(true);
+      setGuardando(true);
     try {
       await registrarUsuario({ username, email, password });
-      await login(username, password);
-      navigate('/app');
-      window.location.reload();
+      navigate(`/login?registro=ok&email=${encodeURIComponent(email)}`);
     } catch (error) {
       const detalle = error.response?.data;
       const primerError =
@@ -55,7 +53,7 @@ const Registro = () => {
           <div className="card shadow p-4 login-panel">
             <h2 className="text-center mb-2">Crear cuenta en PadelTrack</h2>
             <p className="text-center text-muted small mb-4">Tu usuario será único y tu correo no se podrá repetir.</p>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={manejarEnvio}>
               <div className="mb-3">
                 <label className="form-label">Usuario</label>
                 <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} />
