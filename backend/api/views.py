@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.timezone import localtime
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -102,7 +103,7 @@ def enviar_correo_nueva_sesion(sesion):
     if not destinatarios:
         return
 
-    fecha = sesion.fecha_hora.strftime('%d/%m/%Y %H:%M') if sesion.fecha_hora else 'Por definir'
+    fecha = localtime(sesion.fecha_hora).strftime('%d/%m/%Y %H:%M') if sesion.fecha_hora else 'Por definir'
     enlace = construir_enlace_frontend(f'/sesiones/{sesion.id}')
 
     send_mail(
