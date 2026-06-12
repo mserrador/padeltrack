@@ -15,6 +15,7 @@ const DetalleSesionPublica = () => {
   const [sesion, setSesion] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [eliminandoSesion, setEliminandoSesion] = useState(false);
   const [mostrandoEdicion, setMostrandoEdicion] = useState(false);
   const [datosEdicion, setDatosEdicion] = useState({
     lugar: '',
@@ -131,12 +132,14 @@ const DetalleSesionPublica = () => {
   };
 
   const eliminarSesion = async () => {
-    if (!window.confirm('¿Seguro que quieres eliminar esta sesión pública?')) return;
+    if (!window.confirm('¿Seguro que quieres eliminar esta sesión pública? Se borrarán también asistencias y resultados asociados. Esta acción no se puede deshacer.')) return;
+    setEliminandoSesion(true);
     try {
       await api.delete(`sesiones-publicas/${id}/`);
       navigate('/app');
     } catch (error) {
       alert(error.response?.data?.detail || 'No se pudo eliminar la sesión pública.');
+      setEliminandoSesion(false);
     }
   };
 
@@ -172,12 +175,16 @@ const DetalleSesionPublica = () => {
               <p className="text-muted mb-2">Estado: {sesion.estado.replace('_', ' ')}</p>
               {sesion.descripcion && <p className="mb-0">{sesion.descripcion}</p>}
             </div>
-            {esCreador && sesion.estado === 'PLANIFICADA' && (
+            {esCreador && (
               <div className="d-flex gap-2 flex-wrap">
-                <button className="btn btn-outline-success" onClick={() => setMostrandoEdicion((previo) => !previo)}>
-                  {mostrandoEdicion ? 'Cancelar edición' : 'Editar sesión'}
+                {sesion.estado === 'PLANIFICADA' && (
+                  <button className="btn btn-outline-success" onClick={() => setMostrandoEdicion((previo) => !previo)}>
+                    {mostrandoEdicion ? 'Cancelar edición' : 'Editar sesión'}
+                  </button>
+                )}
+                <button className="btn btn-outline-danger" onClick={eliminarSesion} disabled={eliminandoSesion}>
+                  {eliminandoSesion ? 'Eliminando...' : 'Eliminar'}
                 </button>
-                <button className="btn btn-outline-danger" onClick={eliminarSesion}>Eliminar</button>
               </div>
             )}
           </div>

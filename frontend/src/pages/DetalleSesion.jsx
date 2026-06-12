@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { obtenerUsuarioActual, obtenerUsuarioIdActual } from '../services/authService';
 import MarcadorClasico from '../components/MarcadorClasico';
@@ -9,12 +9,14 @@ import ResultadosSesion from '../components/ResultadosSesion';
 
 const DetalleSesion = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [sesion, setSesion] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [puedeEditarSesion, setPuedeEditarSesion] = useState(false);
   const [esAdminGrupo, setEsAdminGrupo] = useState(false);
   const [mostrandoEdicion, setMostrandoEdicion] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [eliminandoSesion, setEliminandoSesion] = useState(false);
   const [miembrosGrupo, setMiembrosGrupo] = useState([]);
   const [usuarioNuevoAsistente, setUsuarioNuevoAsistente] = useState('');
   const [datosEdicion, setDatosEdicion] = useState({
@@ -206,6 +208,27 @@ const DetalleSesion = () => {
     }
   };
 
+  const eliminarSesion = async () => {
+    if (!puedeEditarSesion) {
+      alert('No tienes permisos para eliminar esta sesión.');
+      return;
+    }
+
+    const confirmar = window.confirm(
+      '¿Seguro que quieres eliminar esta sesión? Se borrarán también asistencias, resultados y pagos asociados. Esta acción no se puede deshacer.'
+    );
+    if (!confirmar) return;
+
+    setEliminandoSesion(true);
+    try {
+      await api.delete(`sesiones/${id}/`);
+      navigate(`/grupos/${sesion.grupo}`);
+    } catch (error) {
+      alert(error.response?.data?.detail || 'No se pudo eliminar la sesión.');
+      setEliminandoSesion(false);
+    }
+  };
+
   if (cargando) return <div className="text-center mt-5"><div className="spinner-border text-success"></div></div>;
   if (!sesion) return <div className="alert alert-danger mt-4">Sesión no encontrada.</div>;
 
@@ -284,6 +307,14 @@ const DetalleSesion = () => {
                   onClick={() => setMostrandoEdicion((valor) => !valor)}
                 >
                   {mostrandoEdicion ? 'Cancelar edición' : 'Editar sesión'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={eliminarSesion}
+                  disabled={eliminandoSesion}
+                >
+                  {eliminandoSesion ? 'Eliminando...' : 'Eliminar sesión'}
                 </button>
               </div>
             )}
