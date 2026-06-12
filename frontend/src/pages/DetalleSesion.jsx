@@ -19,6 +19,7 @@ const DetalleSesion = () => {
   const [usuarioNuevoAsistente, setUsuarioNuevoAsistente] = useState('');
   const [datosEdicion, setDatosEdicion] = useState({
     lugar: '',
+    google_maps_url: '',
     fecha_hora: '',
     coste_total: '',
   });
@@ -70,6 +71,7 @@ const DetalleSesion = () => {
       setSesion(sesionData);
       setDatosEdicion({
         lugar: sesionData.lugar || '',
+        google_maps_url: sesionData.google_maps_url || '',
         fecha_hora: fechaInputDesdeSesion(sesionData.fecha_hora),
         coste_total: sesionData.coste_total || '',
       });
@@ -184,6 +186,7 @@ const DetalleSesion = () => {
     try {
       await api.patch(`sesiones/${id}/`, {
         lugar: datosEdicion.lugar,
+        google_maps_url: datosEdicion.google_maps_url,
         fecha_hora: datosEdicion.fecha_hora,
         coste_total: datosEdicion.coste_total,
       });
@@ -218,9 +221,16 @@ const DetalleSesion = () => {
         <Link to={`/grupos/${sesion.grupo}`} className="text-decoration-none text-muted mb-2 d-block">← Volver al Grupo</Link>
         <div className="d-flex justify-content-between align-items-center">
           <h2 className="fw-bold mb-0">{sesion.lugar}</h2>
-          <span className={`badge rounded-pill fs-6 ${sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'}`}>
-            {sesion.estado.replace('_', ' ')}
-          </span>
+          <div className="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            {sesion.google_maps_url && (
+              <a href={sesion.google_maps_url} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm">
+                Abrir en Google Maps
+              </a>
+            )}
+            <span className={`badge rounded-pill fs-6 ${sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'}`}>
+              {sesion.estado.replace('_', ' ')}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -243,6 +253,10 @@ const DetalleSesion = () => {
             <div className="col-12 col-md-6">
               <p className="mb-1 text-muted small">Coste total</p>
               <p className="mb-0 fw-bold">{costeTexto} €</p>
+            </div>
+            <div className="col-12 col-md-6">
+              <p className="mb-1 text-muted small">Ubicación</p>
+              <p className="mb-0 fw-bold">{sesion.google_maps_url ? <a href={sesion.google_maps_url} target="_blank" rel="noreferrer">Ver Google Maps</a> : 'No indicada'}</p>
             </div>
             <div className="col-12 col-md-6">
               <p className="mb-1 text-muted small">Sesión creada por</p>
@@ -297,6 +311,15 @@ const DetalleSesion = () => {
                     required
                   />
                 </div>
+                <div className="mb-2">
+                  <label className="form-label fw-bold small text-muted">Google Maps (opcional)</label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    value={datosEdicion.google_maps_url}
+                    onChange={(e) => setDatosEdicion((previo) => ({ ...previo, google_maps_url: e.target.value }))}
+                  />
+                </div>
                 <div className="mb-3">
                   <label className="form-label fw-bold small text-muted">Coste total de la pista (€)</label>
                   <input
@@ -318,9 +341,11 @@ const DetalleSesion = () => {
             <h6 className="fw-bold text-secondary">Apuntados ({numConfirmados})</h6>
             <ul className="list-group list-group-flush mb-4">
               {sesion.asistentes?.map(asistente => (
-                <li key={asistente.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                  <span>{asistente.usuario_nombre}</span>
-                  <div className="d-flex align-items-center gap-2">
+                <li key={asistente.id} className="list-group-item fila-responsive px-0">
+                  <div className="fila-responsive-info">
+                    <span className="texto-largo-fuerte">{asistente.usuario_nombre}</span>
+                  </div>
+                  <div className="fila-responsive-acciones">
                     <span className={`badge ${asistente.estado_asistencia === 'CONFIRMADO' ? 'bg-success' : asistente.estado_asistencia === 'DECLINADO' ? 'bg-danger' : 'bg-secondary'}`}>{asistente.estado_asistencia}</span>
                     {puedeEditarSesion && (
                       <>

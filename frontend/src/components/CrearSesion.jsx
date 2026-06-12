@@ -7,6 +7,7 @@ const CrearSesion = () => {
   const navigate = useNavigate();
   const [datos, setDatos] = useState({ 
     lugar: '', 
+    google_maps_url: '',
     fecha_hora: '', 
     coste_total: '' 
   });
@@ -71,6 +72,15 @@ const CrearSesion = () => {
               placeholder="Nombre del club o pista" 
               onChange={e => setDatos({...datos, lugar: e.target.value})} 
               required 
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label fw-bold small text-muted">ENLACE DE GOOGLE MAPS (OPCIONAL)</label>
+            <input
+              type="url"
+              className="form-control"
+              placeholder="https://maps.google.com/..."
+              onChange={e => setDatos({...datos, google_maps_url: e.target.value})}
             />
           </div>
           <div className="mb-3">

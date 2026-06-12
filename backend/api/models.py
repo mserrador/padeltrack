@@ -1,11 +1,29 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+
+PROVINCIAS_ESPANA = [
+    ('A Coruna', 'A Coruna'), ('Alava', 'Alava'), ('Albacete', 'Albacete'), ('Alicante', 'Alicante'),
+    ('Almeria', 'Almeria'), ('Asturias', 'Asturias'), ('Avila', 'Avila'), ('Badajoz', 'Badajoz'),
+    ('Barcelona', 'Barcelona'), ('Burgos', 'Burgos'), ('Caceres', 'Caceres'), ('Cadiz', 'Cadiz'),
+    ('Cantabria', 'Cantabria'), ('Castellon', 'Castellon'), ('Ceuta', 'Ceuta'), ('Ciudad Real', 'Ciudad Real'),
+    ('Cordoba', 'Cordoba'), ('Cuenca', 'Cuenca'), ('Girona', 'Girona'), ('Granada', 'Granada'),
+    ('Guadalajara', 'Guadalajara'), ('Guipuzcoa', 'Guipuzcoa'), ('Huelva', 'Huelva'), ('Huesca', 'Huesca'),
+    ('Illes Balears', 'Illes Balears'), ('Jaen', 'Jaen'), ('La Rioja', 'La Rioja'), ('Las Palmas', 'Las Palmas'),
+    ('Leon', 'Leon'), ('Lleida', 'Lleida'), ('Lugo', 'Lugo'), ('Madrid', 'Madrid'), ('Malaga', 'Malaga'),
+    ('Melilla', 'Melilla'), ('Murcia', 'Murcia'), ('Navarra', 'Navarra'), ('Ourense', 'Ourense'),
+    ('Palencia', 'Palencia'), ('Pontevedra', 'Pontevedra'), ('Salamanca', 'Salamanca'), ('Santa Cruz de Tenerife', 'Santa Cruz de Tenerife'),
+    ('Segovia', 'Segovia'), ('Sevilla', 'Sevilla'), ('Soria', 'Soria'), ('Tarragona', 'Tarragona'),
+    ('Teruel', 'Teruel'), ('Toledo', 'Toledo'), ('Valencia', 'Valencia'), ('Valladolid', 'Valladolid'),
+    ('Vizcaya', 'Vizcaya'), ('Zamora', 'Zamora'), ('Zaragoza', 'Zaragoza'),
+]
+
 # ==========================================
 # 0. EL USUARIO 
 # ==========================================
 class Usuario(AbstractUser):
     email_verificado = models.BooleanField(default=False)
+    provincia = models.CharField(max_length=60, choices=PROVINCIAS_ESPANA, blank=True, default='')
 
     def __str__(self):
         return self.username
@@ -50,6 +68,7 @@ class Sesion(models.Model):
     creado_por = models.ForeignKey(Usuario, null=True, blank=True, on_delete=models.SET_NULL, related_name='sesiones_creadas')
     fecha_hora = models.DateTimeField(null=True, blank=True)
     lugar = models.CharField(max_length=200)
+    google_maps_url = models.URLField(blank=True, default='')
     coste_total = models.DecimalField(max_digits=6, decimal_places=2)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PLANIFICADA')
 
@@ -70,6 +89,46 @@ class AsistenteSesion(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['sesion', 'usuario'], name='unique_asistencia_sesion_usuario'),
+        ]
+
+
+class SesionPublica(models.Model):
+    ESTADOS = [
+        ('PLANIFICADA', 'Planificada'),
+        ('EN_CURSO', 'En Curso'),
+        ('FINALIZADA', 'Finalizada'),
+    ]
+
+    creado_por = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='sesiones_publicas_creadas')
+    provincia = models.CharField(max_length=60, choices=PROVINCIAS_ESPANA)
+    fecha_hora = models.DateTimeField()
+    lugar = models.CharField(max_length=200)
+    google_maps_url = models.URLField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default='')
+    coste_total = models.DecimalField(max_digits=6, decimal_places=2)
+    plazas_maximas = models.PositiveIntegerField(default=4)
+    pagador = models.ForeignKey(Usuario, null=True, blank=True, on_delete=models.SET_NULL, related_name='sesiones_publicas_pagadas')
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='PLANIFICADA')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Sesion publica {self.lugar} - {self.provincia}'
+
+
+class AsistenciaSesionPublica(models.Model):
+    ESTADOS_ASISTENCIA = [
+        ('PENDIENTE', 'Pendiente'),
+        ('CONFIRMADO', 'Confirmado'),
+        ('DECLINADO', 'Declinado'),
+    ]
+
+    sesion_publica = models.ForeignKey(SesionPublica, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    estado_asistencia = models.CharField(max_length=20, choices=ESTADOS_ASISTENCIA, default='PENDIENTE')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['sesion_publica', 'usuario'], name='unique_asistencia_sesion_publica_usuario'),
         ]
 
 class Pago(models.Model):
@@ -97,7 +156,8 @@ class Liquidacion(models.Model):
 # ==========================================
 
 class PartidoClasico(models.Model):
-    sesion = models.ForeignKey(Sesion, on_delete=models.CASCADE)
+    sesion = models.ForeignKey(Sesion, null=True, blank=True, on_delete=models.CASCADE)
+    sesion_publica = models.ForeignKey(SesionPublica, null=True, blank=True, on_delete=models.CASCADE)
     # IMPORTANTE: Todos cambiados a Usuario
     jugador1_A = models.ForeignKey(Usuario, related_name='partidos_clasicos_j1A', on_delete=models.CASCADE)
     jugador2_A = models.ForeignKey(Usuario, related_name='partidos_clasicos_j2A', on_delete=models.CASCADE)
@@ -111,7 +171,8 @@ class MiniPartido(models.Model):
         ('B', 'Equipo B'),
     ]
     
-    sesion = models.ForeignKey(Sesion, on_delete=models.CASCADE)
+    sesion = models.ForeignKey(Sesion, null=True, blank=True, on_delete=models.CASCADE)
+    sesion_publica = models.ForeignKey(SesionPublica, null=True, blank=True, on_delete=models.CASCADE)
     orden = models.PositiveIntegerField()
     # IMPORTANTE: Todos cambiados a Usuario
     jugador1_A = models.ForeignKey(Usuario, related_name='mini_partidos_j1A', on_delete=models.CASCADE)

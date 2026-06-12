@@ -251,6 +251,48 @@ small.text-muted {
   color: var(--text-primary);
 }
 
+.texto-largo,
+.texto-largo-fuerte,
+.inline-info-wrap {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.texto-largo-fuerte {
+  font-weight: 700;
+}
+
+.fila-responsive {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.fila-responsive-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fila-responsive-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.mobile-stack-form .form-control,
+.mobile-stack-form .form-select,
+.mobile-stack-form .btn,
+.mobile-stack-form .btn-sm {
+  min-width: 0;
+}
+
 .list-group-item-action {
   transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
@@ -319,6 +361,36 @@ small.text-muted {
 .btn-outline-success:hover {
   color: #f8fafc !important;
   background: var(--brand) !important;
+}
+
+.hub-cta-btn {
+  min-width: 12.75rem;
+  padding: 0.8rem 1.2rem !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+}
+
+.hub-card-btn {
+  border-width: 1px !important;
+  border-radius: 14px !important;
+  padding: 0.72rem 1rem !important;
+  font-weight: 700 !important;
+  background: color-mix(in srgb, var(--surface-soft) 82%, transparent) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.hub-card-btn:hover {
+  box-shadow: 0 10px 22px rgba(34, 197, 94, 0.2);
+}
+
+:root[data-theme='dark'] .hub-card-btn {
+  background: color-mix(in srgb, var(--surface-soft) 88%, var(--bg-main)) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme='dark'] .hub-card-btn:hover {
+  box-shadow: 0 12px 26px rgba(34, 197, 94, 0.22);
 }
 
 .btn-dark {
@@ -732,5 +804,39 @@ small.text-muted {
   .theme-toggle {
     margin-bottom: 0.35rem;
     width: fit-content;
+  }
+
+  .fila-responsive {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .fila-responsive-acciones {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .fila-responsive-acciones .btn,
+  .fila-responsive-acciones .btn-sm,
+  .fila-responsive-acciones .badge {
+    max-width: 100%;
+  }
+
+  .mobile-stack-form .btn,
+  .mobile-stack-form .btn-sm,
+  .hub-cta-btn,
+  .hub-card-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mobile-stack-form .d-flex.flex-column.flex-md-row,
+  .mobile-stack-form .d-flex.justify-content-between,
+  .mobile-stack-form .d-flex.align-items-center {
+    align-items: stretch !important;
+  }
+
+  .list-group-item {
+    overflow: hidden;
   }
 }

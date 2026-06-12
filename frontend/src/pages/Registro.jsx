@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registrarUsuario, obtenerUsuarioActual } from '../services/authService';
+import { PROVINCIAS_ESPANA } from '../constants/provincias';
 
 const Registro = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [provincia, setProvincia] = useState('');
   const [password, setPassword] = useState('');
   const [confirmarPassword, setConfirmarPassword] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -26,7 +28,7 @@ const Registro = () => {
 
       setGuardando(true);
     try {
-      await registrarUsuario({ username, email, password });
+      await registrarUsuario({ username, email, password, provincia });
       navigate(`/login?registro=ok&email=${encodeURIComponent(email)}`);
     } catch (error) {
       const detalle = error.response?.data;
@@ -61,6 +63,15 @@ const Registro = () => {
               <div className="mb-3">
                 <label className="form-label">Correo</label>
                 <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Provincia</label>
+                <select className="form-select" value={provincia} onChange={(e) => setProvincia(e.target.value)} required>
+                  <option value="">Selecciona tu provincia</option>
+                  {PROVINCIAS_ESPANA.map((nombreProvincia) => (
+                    <option key={nombreProvincia} value={nombreProvincia}>{nombreProvincia}</option>
+                  ))}
+                </select>
               </div>
               <div className="mb-3">
                 <label className="form-label">Contraseña</label>

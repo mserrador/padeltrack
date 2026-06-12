@@ -291,20 +291,22 @@ const DetalleGrupo = () => {
                 <Link 
                   to={`/sesiones/${sesion.id}`} 
                   key={sesion.id} 
-                  className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
+                  className="list-group-item list-group-item-action fila-responsive p-3"
                 >
-                  <div>
-                    <h6 className="mb-1 fw-bold">{sesion.lugar}</h6>
+                  <div className="fila-responsive-info">
+                    <h6 className="mb-1 fw-bold texto-largo">{sesion.lugar}</h6>
                     <small className="text-muted">
                       {sesion.fecha_hora ? new Date(sesion.fecha_hora).toLocaleDateString() : 'Fecha por definir'}
                     </small>
                   </div>
-                  <span className={`badge rounded-pill ${
-                    sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : 
-                    sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'
-                  }`}>
-                    {sesion.estado.replace('_', ' ')}
-                  </span>
+                  <div className="fila-responsive-acciones">
+                    <span className={`badge rounded-pill ${
+                      sesion.estado === 'PLANIFICADA' ? 'bg-warning text-dark' : 
+                      sesion.estado === 'EN_CURSO' ? 'bg-success' : 'bg-secondary'
+                    }`}>
+                      {sesion.estado.replace('_', ' ')}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -418,7 +420,7 @@ const DetalleGrupo = () => {
         </div>
 
         {esAdmin ? (
-          <form onSubmit={agregarMiembro} className="mb-3">
+          <form onSubmit={agregarMiembro} className="mb-3 mobile-stack-form">
             <label className="form-label fw-bold small text-muted">Agregar por username</label>
             <div className="d-flex flex-column flex-md-row gap-2">
               <input
@@ -444,12 +446,12 @@ const DetalleGrupo = () => {
         ) : (
           <div className="list-group">
             {miembros.map((miembro) => (
-              <div key={miembro.id} className="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <span className="fw-bold">{miembro.username}</span>
+              <div key={miembro.id} className="list-group-item fila-responsive">
+                <div className="fila-responsive-info">
+                  <span className="texto-largo-fuerte">{miembro.username}</span>
                   <small className="d-block text-muted">{miembro.email || 'Sin correo visible'}</small>
                 </div>
-                <div className="d-flex align-items-center gap-2">
+                <div className="fila-responsive-acciones">
                   {miembro.es_admin && <span className="badge bg-dark">Admin</span>}
                   {esAdmin && (
                     <button className="btn btn-sm btn-outline-danger" onClick={() => eliminarMiembro(miembro.id)}>
@@ -482,7 +484,7 @@ const DetalleGrupo = () => {
               Eliminar grupo
             </button>
           ) : (
-            <form onSubmit={eliminarGrupo}>
+            <form onSubmit={eliminarGrupo} className="mobile-stack-form">
               <label className="form-label fw-bold">
                 Escribe exactamente "{grupo.nombre}" para confirmar
               </label>

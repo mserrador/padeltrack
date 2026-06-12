@@ -27,8 +27,8 @@ export const iniciarSesion = async (username, password) => {
   return respuesta.data;
 };
 
-export const registrarUsuario = async ({ username, email, password }) => {
-  const respuesta = await api.post('registro/', { username, email, password });
+export const registrarUsuario = async ({ username, email, password, provincia }) => {
+  const respuesta = await api.post('registro/', { username, email, password, provincia });
   return respuesta.data;
 };
 
@@ -39,6 +39,21 @@ export const verificarCorreo = async ({ uid, token }) => {
 
 export const reenviarVerificacion = async ({ email }) => {
   const respuesta = await api.post('reenviar-verificacion/', { email });
+  return respuesta.data;
+};
+
+export const solicitarRestablecerPassword = async ({ email }) => {
+  const respuesta = await api.post('solicitar-restablecer-password/', { email });
+  return respuesta.data;
+};
+
+export const restablecerPassword = async ({ uid, token, nueva_password, confirmar_nueva_password }) => {
+  const respuesta = await api.post('restablecer-password/', {
+    uid,
+    token,
+    nueva_password,
+    confirmar_nueva_password,
+  });
   return respuesta.data;
 };
 

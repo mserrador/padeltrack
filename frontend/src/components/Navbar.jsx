@@ -31,7 +31,10 @@ const Navbar = ({ tema, cambiarTema }) => {
             {usuario ? (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link pt-nav-link" to="/app">Mis Grupos</Link>
+                  <Link className="nav-link pt-nav-link" to="/app">Hub</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link pt-nav-link" to="/perfil">Mi perfil</Link>
                 </li>
                 <li className="nav-item">
                   <span className="nav-link pt-nav-link fw-bold">Hola, {usuario}</span>

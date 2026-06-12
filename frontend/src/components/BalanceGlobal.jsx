@@ -150,21 +150,25 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
       
       <div className="card-body p-4">
         {/* BLOQUE SUPERIOR: Balances y Formulario */}
-        <div className="row mb-5">
+        <div className="row mb-5 mobile-stack-form">
           <div className="col-12 col-md-7 mb-4 mb-md-0">
             <h6 className="fw-bold text-secondary mb-3">Balance por Jugador</h6>
             <ul className="list-group shadow-sm">
               {balances.map(b => (
-                <li key={`bal_${b.usuario_id}`} className="list-group-item d-flex justify-content-between align-items-center p-3">
-                  <span className="fw-bold">{b.username}</span>
-                  <span className={`badge rounded-pill p-2 fs-6 ${
+                <li key={`bal_${b.usuario_id}`} className="list-group-item fila-responsive p-3">
+                  <div className="fila-responsive-info">
+                    <span className="texto-largo-fuerte">{b.username}</span>
+                  </div>
+                  <div className="fila-responsive-acciones">
+                    <span className={`badge rounded-pill p-2 fs-6 ${
                     b.balance === 0 ? 'bg-secondary' : 
                     b.balance > 0 ? 'bg-success' : 'bg-danger'
                   }`}>
                     {b.balance === 0 ? 'Al día (0.00€)' : 
                      b.balance > 0 ? `Le deben ${b.balance}€` : 
                      `Debe ${Math.abs(b.balance)}€`}
-                  </span>
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -219,17 +223,17 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
           ) : (
             <div className="list-group shadow-sm">
               {transacciones.map((t, index) => (
-                <div key={index} className="list-group-item d-flex justify-content-between align-items-center p-3">
-                  <div>
-                    <span className="fw-bold text-danger">{t.de}</span>
+                <div key={index} className="list-group-item fila-responsive p-3">
+                  <div className="fila-responsive-info inline-info-wrap">
+                    <span className="fw-bold text-danger texto-largo">{t.de}</span>
                     <span className="text-muted mx-2">debe pagar a</span>
-                    <span className="fw-bold text-success">{t.a}</span>
+                    <span className="fw-bold text-success texto-largo">{t.a}</span>
                   </div>
-                  <div className="text-end">
+                  <div className="fila-responsive-acciones">
                     <span className="badge bg-dark fs-6">{t.cantidad}€</span>
                     {(esAdmin || Number(t.de_id) === Number(miUsuarioId)) && (
                       <button 
-                        className="btn btn-sm btn-outline-primary ms-3"
+                        className="btn btn-sm btn-outline-primary"
                         onClick={() => preRellenarBizum(t.de_id, t.a_id, t.cantidad)}
                       >
                         Registrar Bizum
@@ -253,14 +257,16 @@ const BalanceGlobal = ({ grupoId, esAdmin }) => {
             <div className="list-group list-group-flush shadow-sm border rounded">
             {historialPaginado.map((mov) => (
               <div key={`mov_${mov.id}`} className="list-group-item p-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
+                <div className="fila-responsive">
+                  <div className="fila-responsive-info inline-info-wrap">
                     {/* OJO AQUÍ: Asegúrate de que tu LiquidacionSerializer devuelve pagador_nombre y receptor_nombre */}
-                    <span className="fw-bold">{mov.pagador_nombre}</span>
+                    <span className="fw-bold texto-largo">{mov.pagador_nombre}</span>
                     <span className="text-muted mx-2">pagó a</span>
-                    <span className="fw-bold">{mov.receptor_nombre}</span>
+                    <span className="fw-bold texto-largo">{mov.receptor_nombre}</span>
                   </div>
-                  <span className="fw-bold text-success fs-5">+{mov.cantidad}€</span>
+                  <div className="fila-responsive-acciones">
+                    <span className="fw-bold text-success fs-5">+{mov.cantidad}€</span>
+                  </div>
                 </div>
                 <small className="text-muted">
                   {new Date(mov.fecha).toLocaleDateString()} a las {new Date(mov.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

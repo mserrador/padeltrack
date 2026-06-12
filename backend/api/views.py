@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -18,8 +18,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido, MiembroGrupo, Liquidacion
-from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, AsistenteSesionSerializer, PagoSerializer, PartidoClasicoSerializer, MiniPartidoSerializer, LiquidacionSerializer, RegistroUsuarioSerializer, MiembroGrupoSerializer
+from .models import Usuario, Grupo, Sesion, AsistenteSesion, Pago, PartidoClasico, MiniPartido, MiembroGrupo, Liquidacion, SesionPublica, AsistenciaSesionPublica
+from .serializers import UsuarioSerializer, GrupoSerializer, SesionSerializer, AsistenteSesionSerializer, PagoSerializer, PartidoClasicoSerializer, MiniPartidoSerializer, LiquidacionSerializer, RegistroUsuarioSerializer, MiembroGrupoSerializer, CambiarPasswordSerializer, SolicitarRestablecerPasswordSerializer, RestablecerPasswordSerializer, validar_password_en_espanol, ActualizarPerfilSerializer, SesionPublicaSerializer, AsistenciaSesionPublicaSerializer
 
 
 registro_eventos = logging.getLogger(__name__)
@@ -65,6 +65,26 @@ def enviar_correo_verificacion(usuario):
             'Antes de iniciar sesión, verifica tu correo desde este enlace:\n\n'
             f'{enlace}\n\n'
             'Si no has creado esta cuenta, puedes ignorar este mensaje.'
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[usuario.email],
+        fail_silently=False,
+    )
+
+
+def enviar_correo_restablecer_password(usuario):
+    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+    token = default_token_generator.make_token(usuario)
+    enlace = construir_enlace_frontend(f'/restablecer-password?uid={uid}&token={token}')
+
+    send_mail(
+        subject='Restablece tu contraseña en PadelTrack',
+        message=(
+            f'Hola {usuario.username},\n\n'
+            'Has solicitado cambiar tu contraseña en PadelTrack.\n'
+            'Puedes crear una nueva desde este enlace:\n\n'
+            f'{enlace}\n\n'
+            'Si no has solicitado este cambio, puedes ignorar este mensaje.'
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[usuario.email],
@@ -212,6 +232,29 @@ def validar_marcador_en_sesion(usuario, sesion):
         raise PermissionDenied('Solo los jugadores confirmados de esta sesión pueden registrar resultados.')
 
 
+def usuario_es_confirmado_en_sesion_publica(usuario, sesion_publica):
+    return AsistenciaSesionPublica.objects.filter(
+        sesion_publica=sesion_publica,
+        usuario=usuario,
+        estado_asistencia='CONFIRMADO',
+    ).exists()
+
+
+def validar_marcador_en_sesion_publica(usuario, sesion_publica):
+    if usuario.provincia != sesion_publica.provincia and sesion_publica.creado_por_id != usuario.id:
+        raise PermissionDenied('No tienes permisos sobre esta sesión pública.')
+
+    if sesion_publica.estado != 'EN_CURSO':
+        raise PermissionDenied('Solo se pueden registrar resultados cuando la sesión pública está en curso.')
+
+    if not usuario_es_confirmado_en_sesion_publica(usuario, sesion_publica):
+        raise PermissionDenied('Solo los jugadores confirmados de esta sesión pública pueden registrar resultados.')
+
+
+def usuario_puede_editar_sesion_publica(usuario, sesion_publica):
+    return sesion_publica.creado_por_id == usuario.id
+
+
 class SerializadorTokenPadelTrack(TokenObtainPairSerializer):
     default_error_messages = {
         'no_active_account': 'Usuario o contraseña incorrectos.',
@@ -305,6 +348,54 @@ class ReenviarVerificacionView(APIView):
 
         return Response({'detail': 'Te hemos reenviado el correo de verificación.'}, status=status.HTTP_200_OK)
 
+
+class SolicitarRestablecerPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SolicitarRestablecerPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email'].strip().lower()
+        usuario = Usuario.objects.filter(email__iexact=email, email_verificado=True).first()
+
+        if usuario:
+            try:
+                enviar_correo_restablecer_password(usuario)
+            except Exception:
+                registro_eventos.exception('No se pudo enviar el correo de restablecimiento para %s', email)
+                raise ValidationError({'detail': 'No se pudo enviar el correo de restablecimiento. Inténtalo de nuevo más tarde.'})
+
+        return Response(
+            {'detail': 'Si existe una cuenta verificada con ese correo, te hemos enviado un enlace para restablecer la contraseña.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class RestablecerPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RestablecerPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        uid = serializer.validated_data['uid']
+        token = serializer.validated_data['token']
+
+        try:
+            usuario_id = force_str(urlsafe_base64_decode(uid))
+            usuario = Usuario.objects.get(pk=usuario_id, email_verificado=True)
+        except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+            raise ValidationError({'detail': 'El enlace para restablecer la contraseña no es válido o ha caducado.'})
+
+        if not default_token_generator.check_token(usuario, token):
+            raise ValidationError({'detail': 'El enlace para restablecer la contraseña no es válido o ha caducado.'})
+
+        validar_password_en_espanol(serializer.validated_data['nueva_password'], usuario)
+        usuario.set_password(serializer.validated_data['nueva_password'])
+        usuario.save(update_fields=['password'])
+        return Response({'detail': 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.'}, status=status.HTTP_200_OK)
+
 # Vista para Usuarios
 class UsuarioViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -325,6 +416,22 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     def me(self, request):
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
+
+    @me.mapping.patch
+    def actualizar_me(self, request):
+        serializer = ActualizarPerfilSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UsuarioSerializer(request.user).data)
+
+    @action(detail=False, methods=['post'], url_path='cambiar-password')
+    def cambiar_password(self, request):
+        serializer = CambiarPasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(serializer.validated_data['nueva_password'])
+        request.user.save(update_fields=['password'])
+        return Response({'detail': 'Contraseña actualizada correctamente.'}, status=status.HTTP_200_OK)
 
 # Vista para Grupos
 class GrupoViewSet(viewsets.ModelViewSet):
@@ -549,6 +656,135 @@ class GrupoViewSet(viewsets.ModelViewSet):
             'ranking': ranking,
         })
 
+
+class SesionPublicaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SesionPublicaSerializer
+
+    def get_queryset(self):
+        usuario = self.request.user
+        filtros = Q(creado_por=usuario) | Q(asistenciasesionpublica__usuario=usuario)
+        if usuario.provincia:
+            filtros |= Q(provincia=usuario.provincia, estado='PLANIFICADA')
+
+        queryset = SesionPublica.objects.filter(filtros).distinct().order_by('fecha_hora', 'id')
+        if self.action == 'list':
+            queryset = queryset.exclude(estado='FINALIZADA')
+        return queryset
+
+    def perform_create(self, serializer):
+        if not self.request.user.provincia:
+            raise ValidationError({'detail': 'Debes indicar tu provincia en el perfil antes de crear una sesión pública.'})
+
+        with transaction.atomic():
+            sesion_publica = serializer.save(creado_por=self.request.user, provincia=self.request.user.provincia)
+            AsistenciaSesionPublica.objects.create(
+                sesion_publica=sesion_publica,
+                usuario=self.request.user,
+                estado_asistencia='CONFIRMADO',
+            )
+
+    def perform_update(self, serializer):
+        sesion_publica = self.get_object()
+        if not usuario_puede_editar_sesion_publica(self.request.user, sesion_publica):
+            raise PermissionDenied('Solo el creador puede editar esta sesión pública.')
+
+        nuevo_estado = serializer.validated_data.get('estado', sesion_publica.estado)
+        pagador = serializer.validated_data.get('pagador', sesion_publica.pagador)
+
+        if nuevo_estado == 'EN_CURSO':
+            confirmados = sesion_publica.asistenciasesionpublica_set.filter(estado_asistencia='CONFIRMADO').count()
+            if confirmados < 4:
+                raise ValidationError({'estado': ['Se necesitan al menos 4 jugadores confirmados para iniciar la sesión pública.']})
+
+        if nuevo_estado != 'FINALIZADA' and 'pagador' in serializer.validated_data:
+            raise ValidationError({'pagador': ['El pagador solo se puede fijar cuando la sesión pública está finalizada.']})
+
+        if pagador and not AsistenciaSesionPublica.objects.filter(
+            sesion_publica=sesion_publica,
+            usuario=pagador,
+            estado_asistencia='CONFIRMADO',
+        ).exists():
+            raise ValidationError({'pagador': ['El pagador debe estar confirmado en la sesión pública.']})
+
+        serializer.save(provincia=sesion_publica.provincia)
+
+    def perform_destroy(self, instance):
+        if not usuario_puede_editar_sesion_publica(self.request.user, instance):
+            raise PermissionDenied('Solo el creador puede eliminar esta sesión pública.')
+        instance.delete()
+
+
+class AsistenciaSesionPublicaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AsistenciaSesionPublicaSerializer
+
+    def get_queryset(self):
+        return AsistenciaSesionPublica.objects.filter(usuario=self.request.user).distinct()
+
+    def create(self, request, *args, **kwargs):
+        datos = request.data.copy()
+        if not datos.get('usuario'):
+            datos['usuario'] = request.user.id
+
+        serializer = self.get_serializer(data=datos)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def _validar_confirmacion(self, sesion_publica, usuario, estado, instancia=None):
+        if sesion_publica.estado != 'PLANIFICADA':
+            raise ValidationError({'detail': 'Solo se puede cambiar la asistencia mientras la sesión pública está planificada.'})
+
+        if not instancia and sesion_publica.asistenciasesionpublica_set.filter(usuario=usuario).exists():
+            raise ValidationError({'detail': 'Ya tienes una asistencia registrada en esta sesión pública.'})
+
+        if not instancia:
+            confirmados_actuales = AsistenciaSesionPublica.objects.filter(
+                sesion_publica=sesion_publica,
+                estado_asistencia='CONFIRMADO',
+            ).count()
+            if confirmados_actuales >= sesion_publica.plazas_maximas:
+                raise ValidationError({'detail': 'La sesión pública ya está completa y no admite nuevas asistencias.'})
+
+        if estado != 'CONFIRMADO':
+            return
+
+        confirmados = AsistenciaSesionPublica.objects.filter(
+            sesion_publica=sesion_publica,
+            estado_asistencia='CONFIRMADO',
+        )
+        if instancia:
+            confirmados = confirmados.exclude(id=instancia.id)
+
+        plazas_ocupadas = confirmados.count()
+        ya_confirmado = instancia and instancia.usuario_id == usuario.id and instancia.estado_asistencia == 'CONFIRMADO'
+        if ya_confirmado:
+            return
+
+        if plazas_ocupadas >= sesion_publica.plazas_maximas:
+            raise ValidationError({'estado_asistencia': ['No quedan plazas disponibles en esta sesión pública.']})
+
+    def perform_create(self, serializer):
+        sesion_publica = serializer.validated_data['sesion_publica']
+        usuario = self.request.user
+
+        if sesion_publica.creado_por_id != usuario.id and usuario.provincia != sesion_publica.provincia:
+            raise PermissionDenied('Solo puedes apuntarte a sesiones públicas de tu provincia.')
+
+        self._validar_confirmacion(sesion_publica, usuario, serializer.validated_data['estado_asistencia'])
+        serializer.save(usuario=usuario)
+
+    def perform_update(self, serializer):
+        asistencia = self.get_object()
+        if asistencia.usuario_id != self.request.user.id:
+            raise PermissionDenied('Solo puedes modificar tu propia asistencia.')
+
+        estado = serializer.validated_data.get('estado_asistencia', asistencia.estado_asistencia)
+        self._validar_confirmacion(asistencia.sesion_publica, self.request.user, estado, instancia=asistencia)
+        serializer.save()
+
 # Vista para Sesiones (Aquí es donde se planifican los partidos)
 class SesionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -682,16 +918,35 @@ class PartidoClasicoViewSet(viewsets.ModelViewSet):
     serializer_class = PartidoClasicoSerializer
 
     def get_queryset(self):
-        return PartidoClasico.objects.filter(sesion__grupo__miembrogrupo__usuario=self.request.user).distinct()
+        return PartidoClasico.objects.filter(
+            Q(sesion__grupo__miembrogrupo__usuario=self.request.user) |
+            Q(sesion_publica__provincia=self.request.user.provincia) |
+            Q(sesion_publica__creado_por=self.request.user)
+        ).distinct()
 
     def _validar_jugadores_en_grupo(self, sesion, jugadores_ids):
         miembros = ids_miembros_grupo(sesion.grupo)
         if not set(jugadores_ids).issubset(miembros):
             raise ValidationError('Todos los jugadores del partido deben pertenecer al grupo.')
 
+    def _validar_jugadores_en_sesion_publica(self, sesion_publica, jugadores_ids):
+        confirmados = set(
+            AsistenciaSesionPublica.objects.filter(
+                sesion_publica=sesion_publica,
+                estado_asistencia='CONFIRMADO',
+            ).values_list('usuario_id', flat=True)
+        )
+        if not set(jugadores_ids).issubset(confirmados):
+            raise ValidationError('Todos los jugadores del partido deben estar confirmados en la sesión pública.')
+
     def perform_create(self, serializer):
-        sesion = serializer.validated_data['sesion']
-        validar_marcador_en_sesion(self.request.user, sesion)
+        sesion = serializer.validated_data.get('sesion')
+        sesion_publica = serializer.validated_data.get('sesion_publica')
+
+        if sesion_publica:
+            validar_marcador_en_sesion_publica(self.request.user, sesion_publica)
+        else:
+            validar_marcador_en_sesion(self.request.user, sesion)
 
         jugadores_ids = [
             serializer.validated_data['jugador1_A'].id,
@@ -699,12 +954,18 @@ class PartidoClasicoViewSet(viewsets.ModelViewSet):
             serializer.validated_data['jugador1_B'].id,
             serializer.validated_data['jugador2_B'].id,
         ]
-        self._validar_jugadores_en_grupo(sesion, jugadores_ids)
+        if sesion_publica:
+            self._validar_jugadores_en_sesion_publica(sesion_publica, jugadores_ids)
+        else:
+            self._validar_jugadores_en_grupo(sesion, jugadores_ids)
         serializer.save()
 
     def perform_update(self, serializer):
         partido = self.get_object()
-        validar_marcador_en_sesion(self.request.user, partido.sesion)
+        if partido.sesion_publica_id:
+            validar_marcador_en_sesion_publica(self.request.user, partido.sesion_publica)
+        else:
+            validar_marcador_en_sesion(self.request.user, partido.sesion)
 
         jugadores_ids = [
             serializer.validated_data.get('jugador1_A', partido.jugador1_A).id,
@@ -712,11 +973,18 @@ class PartidoClasicoViewSet(viewsets.ModelViewSet):
             serializer.validated_data.get('jugador1_B', partido.jugador1_B).id,
             serializer.validated_data.get('jugador2_B', partido.jugador2_B).id,
         ]
-        self._validar_jugadores_en_grupo(partido.sesion, jugadores_ids)
+        if partido.sesion_publica_id:
+            self._validar_jugadores_en_sesion_publica(partido.sesion_publica, jugadores_ids)
+        else:
+            self._validar_jugadores_en_grupo(partido.sesion, jugadores_ids)
         serializer.save()
 
     def perform_destroy(self, instance):
-        validar_admin_en_grupo(self.request.user, instance.sesion.grupo)
+        if instance.sesion_publica_id:
+            if not usuario_puede_editar_sesion_publica(self.request.user, instance.sesion_publica):
+                raise PermissionDenied('Solo el creador puede eliminar resultados de esta sesión pública.')
+        else:
+            validar_admin_en_grupo(self.request.user, instance.sesion.grupo)
         instance.delete()
 
 class MiniPartidoViewSet(viewsets.ModelViewSet):
@@ -724,16 +992,34 @@ class MiniPartidoViewSet(viewsets.ModelViewSet):
     serializer_class = MiniPartidoSerializer
 
     def get_queryset(self):
-        return MiniPartido.objects.filter(sesion__grupo__miembrogrupo__usuario=self.request.user).distinct()
+        return MiniPartido.objects.filter(
+            Q(sesion__grupo__miembrogrupo__usuario=self.request.user) |
+            Q(sesion_publica__provincia=self.request.user.provincia) |
+            Q(sesion_publica__creado_por=self.request.user)
+        ).distinct()
 
     def _validar_jugadores_en_grupo(self, sesion, jugadores_ids):
         miembros = ids_miembros_grupo(sesion.grupo)
         if not set(jugadores_ids).issubset(miembros):
             raise ValidationError('Todos los jugadores del mini partido deben pertenecer al grupo.')
 
+    def _validar_jugadores_en_sesion_publica(self, sesion_publica, jugadores_ids):
+        confirmados = set(
+            AsistenciaSesionPublica.objects.filter(
+                sesion_publica=sesion_publica,
+                estado_asistencia='CONFIRMADO',
+            ).values_list('usuario_id', flat=True)
+        )
+        if not set(jugadores_ids).issubset(confirmados):
+            raise ValidationError('Todos los jugadores del mini partido deben estar confirmados en la sesión pública.')
+
     def perform_create(self, serializer):
-        sesion = serializer.validated_data['sesion']
-        validar_marcador_en_sesion(self.request.user, sesion)
+        sesion = serializer.validated_data.get('sesion')
+        sesion_publica = serializer.validated_data.get('sesion_publica')
+        if sesion_publica:
+            validar_marcador_en_sesion_publica(self.request.user, sesion_publica)
+        else:
+            validar_marcador_en_sesion(self.request.user, sesion)
 
         jugadores_ids = [
             serializer.validated_data['jugador1_A'].id,
@@ -741,12 +1027,18 @@ class MiniPartidoViewSet(viewsets.ModelViewSet):
             serializer.validated_data['jugador1_B'].id,
             serializer.validated_data['jugador2_B'].id,
         ]
-        self._validar_jugadores_en_grupo(sesion, jugadores_ids)
+        if sesion_publica:
+            self._validar_jugadores_en_sesion_publica(sesion_publica, jugadores_ids)
+        else:
+            self._validar_jugadores_en_grupo(sesion, jugadores_ids)
         serializer.save()
 
     def perform_update(self, serializer):
         partido = self.get_object()
-        validar_marcador_en_sesion(self.request.user, partido.sesion)
+        if partido.sesion_publica_id:
+            validar_marcador_en_sesion_publica(self.request.user, partido.sesion_publica)
+        else:
+            validar_marcador_en_sesion(self.request.user, partido.sesion)
 
         jugadores_ids = [
             serializer.validated_data.get('jugador1_A', partido.jugador1_A).id,
@@ -754,11 +1046,18 @@ class MiniPartidoViewSet(viewsets.ModelViewSet):
             serializer.validated_data.get('jugador1_B', partido.jugador1_B).id,
             serializer.validated_data.get('jugador2_B', partido.jugador2_B).id,
         ]
-        self._validar_jugadores_en_grupo(partido.sesion, jugadores_ids)
+        if partido.sesion_publica_id:
+            self._validar_jugadores_en_sesion_publica(partido.sesion_publica, jugadores_ids)
+        else:
+            self._validar_jugadores_en_grupo(partido.sesion, jugadores_ids)
         serializer.save()
 
     def perform_destroy(self, instance):
-        validar_admin_en_grupo(self.request.user, instance.sesion.grupo)
+        if instance.sesion_publica_id:
+            if not usuario_puede_editar_sesion_publica(self.request.user, instance.sesion_publica):
+                raise PermissionDenied('Solo el creador puede eliminar resultados de esta sesión pública.')
+        else:
+            validar_admin_en_grupo(self.request.user, instance.sesion.grupo)
         instance.delete()
 
 class LiquidacionViewSet(viewsets.ModelViewSet):

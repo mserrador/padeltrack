@@ -10,6 +10,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [parametrosBusqueda] = useSearchParams();
   const registroOk = parametrosBusqueda.get('registro') === 'ok';
+  const resetOk = parametrosBusqueda.get('reset') === 'ok';
   const correoRegistro = parametrosBusqueda.get('email');
 
   useEffect(() => {
@@ -72,6 +73,11 @@ const Login = () => {
                 Cuenta creada correctamente. Revisa {correoRegistro || 'tu correo'} y verifica la cuenta antes de iniciar sesión.
               </div>
             )}
+            {resetOk && (
+              <div className="alert alert-success small" role="alert">
+                Contraseña actualizada correctamente. Ya puedes iniciar sesión con la nueva contraseña.
+              </div>
+            )}
             <form onSubmit={manejarEnvio}>
               <div className="mb-3">
                 <label className="form-label">Usuario</label>
@@ -80,6 +86,9 @@ const Login = () => {
               <div className="mb-3">
                 <label className="form-label">Contraseña</label>
                 <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <div className="text-end mb-3">
+                <Link to="/olvide-password" className="small">He olvidado mi contraseña</Link>
               </div>
               <button type="submit" className="btn btn-success w-100">Iniciar Sesión</button>
             </form>

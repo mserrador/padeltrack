@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 
-const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
+const MarcadorClasico = ({ asistentes, sesionId, sesionPublicaId, recargarSesion }) => {
   // Filtramos para mostrar solo a los que confirmaron asistencia
   const confirmados = asistentes.filter(a => a.estado_asistencia === 'CONFIRMADO');
 
@@ -42,7 +42,7 @@ const MarcadorClasico = ({ asistentes, sesionId, recargarSesion }) => {
     setGuardando(true);
     try {
       await api.post('partidos-clasicos/', {
-        sesion: sesionId,
+        ...(sesionId ? { sesion: sesionId } : { sesion_publica: sesionPublicaId }),
         jugador1_A: j1A,
         jugador2_A: j2A,
         jugador1_B: j1B,

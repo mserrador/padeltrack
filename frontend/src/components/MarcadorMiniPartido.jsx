@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 
-const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
+const MarcadorMiniPartido = ({ asistentes, sesion, sesionPublica, recargarSesion }) => {
   const confirmados = asistentes.filter(a => a.estado_asistencia === 'CONFIRMADO');
+  const contenedorSesion = sesion || sesionPublica;
   
   const [j1A, setJ1A] = useState('');
   const [j2A, setJ2A] = useState('');
@@ -20,7 +21,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
     if (!id1 || !id2) return 0;
     
     // 1. Obtenemos todas las rondas ordenadas
-    let rondas = [...(sesion.mini_partidos || [])].sort((a, b) => a.orden - b.orden);
+    let rondas = [...(contenedorSesion?.mini_partidos || [])].sort((a, b) => a.orden - b.orden);
     if (rondas.length === 0) return 0;
 
     // CORRECCIÓN CLAVE: El filtro de Amnesia
@@ -73,8 +74,8 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
 
     try {
       await api.post('mini-partidos/', {
-        sesion: sesion.id,
-        orden: (sesion.mini_partidos?.length || 0) + 1,
+        ...(sesion ? { sesion: sesion.id } : { sesion_publica: sesionPublica.id }),
+        orden: (contenedorSesion?.mini_partidos?.length || 0) + 1,
         jugador1_A: j1A, jugador2_A: j2A,
         jugador1_B: j1B, jugador2_B: j2B,
         ganador: equipoGanador,
@@ -178,7 +179,7 @@ const MarcadorMiniPartido = ({ asistentes, sesion, recargarSesion }) => {
   return (
     <div className="card shadow-lg border-0 mini-scoreboard mb-4">
       <div className="card-header mini-scoreboard-header text-dark d-flex justify-content-between align-items-center py-3">
-        <h4 className="mb-0 fw-bold">Rey de la Pista (Ronda {(sesion.mini_partidos?.length || 0) + 1})</h4>
+        <h4 className="mb-0 fw-bold">Rey de la Pista (Ronda {(contenedorSesion?.mini_partidos?.length || 0) + 1})</h4>
         <button className="btn btn-sm btn-dark fw-bold shadow-sm" onClick={hacerEquiposAleatorios}>
           Sorteo
         </button>
