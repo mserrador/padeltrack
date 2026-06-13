@@ -1,4 +1,4 @@
-:80 {
+padeltrack.duckdns.org {
     encode gzip zstd
     root * /srv/frontend
     route {
